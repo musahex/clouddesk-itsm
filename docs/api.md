@@ -21,7 +21,7 @@ Returns server status. No auth required.
 
 ### POST /api/auth/register
 
-Register a new user.
+Register a new user. `role` defaults to `requester` if omitted.
 
 **Body:**
 ```json
@@ -33,7 +33,22 @@ Register a new user.
 }
 ```
 
-**Response:** `201` — `{ "token": "string" }`
+**Response `201`:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "664f1a2b3c4d5e6f7a8b9c0d",
+    "name": "Jane Smith",
+    "email": "jane@example.com",
+    "role": "requester"
+  }
+}
+```
+
+**Errors:**
+- `400` — missing required fields, invalid role, or email already registered
+- `500` — server error
 
 ---
 
@@ -46,7 +61,35 @@ Login and receive a JWT.
 { "email": "string", "password": "string" }
 ```
 
-**Response:** `200` — `{ "token": "string" }`
+**Response `200`:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "664f1a2b3c4d5e6f7a8b9c0d",
+    "name": "Jane Smith",
+    "email": "jane@example.com",
+    "role": "requester"
+  }
+}
+```
+
+**Errors:**
+- `400` — missing fields
+- `401` — invalid credentials
+- `500` — server error
+
+---
+
+### Using the JWT
+
+Include the token in the `Authorization` header on all protected requests:
+
+```
+Authorization: Bearer <token>
+```
+
+The token encodes `{ id, role, name }` and expires after **7 days**.
 
 ---
 

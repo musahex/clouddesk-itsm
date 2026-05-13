@@ -1,6 +1,15 @@
 # CloudDesk API Reference
 
-Base URL (local): `http://localhost:5000/api`
+**Base URL (local):** `http://localhost:5000/api`
+
+All protected routes require a valid JWT in the `Authorization` header:
+```
+Authorization: Bearer <token>
+```
+
+Tokens are returned by `/api/auth/login` and `/api/auth/register`. They expire after 7 days.
+
+All error responses use the shape `{ "message": "string" }`.
 
 ---
 
@@ -90,6 +99,31 @@ Authorization: Bearer <token>
 ```
 
 The token encodes `{ id, role, name }` and expires after **7 days**.
+
+---
+
+## Users
+
+> All user routes require `Authorization: Bearer <token>`.
+
+---
+
+### GET /api/users/assignees
+
+Returns all users with role `support_agent` or `admin`. Used to populate the ticket assignment dropdown.
+
+Requires `support_agent` or `admin` role.
+
+**Response `200`:**
+```json
+[
+  { "_id": "664f...", "name": "Agent One", "email": "agent@clouddesk.dev", "role": "support_agent" },
+  { "_id": "665a...", "name": "Admin User", "email": "admin@clouddesk.dev", "role": "admin" }
+]
+```
+
+**Errors:**
+- `403` — insufficient role (requesters cannot access this endpoint)
 
 ---
 

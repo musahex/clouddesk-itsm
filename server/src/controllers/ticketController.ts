@@ -147,6 +147,7 @@ export async function updateStatus(req: Request, res: Response): Promise<void> {
     await ticket.populate([
       { path: 'requester', select: 'name email role' },
       { path: 'assignedTo', select: 'name email role' },
+      { path: 'comments.author', select: 'name email role' },
     ]);
 
     res.json(ticket);
@@ -259,6 +260,7 @@ export async function assignTicket(req: Request, res: Response): Promise<void> {
     await ticket.populate([
       { path: 'requester', select: 'name email role' },
       { path: 'assignedTo', select: 'name email role' },
+      { path: 'comments.author', select: 'name email role' },
     ]);
 
     res.json(ticket);

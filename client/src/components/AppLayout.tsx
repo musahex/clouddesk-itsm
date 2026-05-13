@@ -30,18 +30,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          <NavLink
-            to="/dashboard"
-            className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-teal-600/20 text-teal-400'
-                  : 'text-navy-300 hover:bg-navy-700 hover:text-white'
-              }`
-            }
-          >
-            Dashboard
-          </NavLink>
+          {[
+            { to: '/dashboard', label: 'Dashboard' },
+            { to: '/tickets', label: 'Tickets' },
+          ].map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-teal-600/20 text-teal-400'
+                    : 'text-navy-300 hover:bg-navy-700 hover:text-white'
+                }`
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
         </nav>
 
         {/* User info + sign out */}

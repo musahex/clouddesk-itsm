@@ -7,6 +7,10 @@ import DashboardPage from './pages/DashboardPage';
 import TicketsPage from './pages/TicketsPage';
 import TicketDetailPage from './pages/TicketDetailPage';
 import CreateTicketPage from './pages/CreateTicketPage';
+import KnowledgeBasePage from './pages/KnowledgeBasePage';
+import KnowledgeArticlePage from './pages/KnowledgeArticlePage';
+import CreateKnowledgeArticlePage from './pages/CreateKnowledgeArticlePage';
+import EditKnowledgeArticlePage from './pages/EditKnowledgeArticlePage';
 
 // Redirects already-authenticated users away from public pages
 function PublicRoute({ children }: { children: React.ReactNode }) {
@@ -65,6 +69,38 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <TicketDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/kb"
+        element={
+          <ProtectedRoute>
+            <KnowledgeBasePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/kb/new"
+        element={
+          <ProtectedRoute>
+            <CreateKnowledgeArticlePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/kb/:id"
+        element={
+          <ProtectedRoute>
+            <KnowledgeArticlePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/kb/:id/edit"
+        element={
+          <ProtectedRoute>
+            <EditKnowledgeArticlePage />
           </ProtectedRoute>
         }
       />

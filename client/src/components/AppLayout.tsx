@@ -33,6 +33,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {[
             { to: '/dashboard', label: 'Dashboard' },
             { to: '/tickets', label: 'Tickets' },
+            { to: '/kb', label: 'Knowledge Base' },
           ].map(({ to, label }) => (
             <NavLink
               key={to}

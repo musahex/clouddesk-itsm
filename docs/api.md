@@ -250,17 +250,144 @@ If the ticket status is `New`, it is automatically advanced to `Assigned`.
 
 ## Knowledge Base
 
-### GET /api/kb
-List all published articles. Public.
+> All KB routes require `Authorization: Bearer <token>`.
 
-### POST /api/kb
-Create an article. Requires `support_agent` or `admin` role.
+---
+
+### GET /api/kb
+
+List knowledge base articles.
+
+- `requester` — published articles only
+- `support_agent` / `admin` — published articles by default; add `?includeUnpublished=true` to include drafts
+
+Results sorted newest first. `author` populated with `name email role`.
+
+**Response `200`:** Array of article objects.
+
+---
+
+### GET /api/kb/search
+
+Search articles by title, content, category, or tags.
+
+| Query param | Type | Description |
+|---|---|---|
+| `q` | string | Case-insensitive match against title and content |
+| `category` | string | Exact category match |
+| `tags` | string | Comma-separated tag list — matches any (`$in`) |
+| `includeUnpublished` | `true` | `support_agent` / `admin` only — include drafts |
+
+- `requester` — published results only (regardless of `includeUnpublished`)
+
+**Examples:**
+```
+GET /api/kb/search?q=VPN
+GET /api/kb/search?category=Network
+GET /api/kb/search?tags=vpn,firewall
+GET /api/kb/search?q=password&includeUnpublished=true
+```
+
+**Response `200`:** Array of matching article objects.
+
+**Errors:**
+- `400` — invalid category value
+
+---
 
 ### GET /api/kb/:id
-Get a single article.
 
-### PUT /api/kb/:id
-Update an article. Requires `support_agent` or `admin` role.
+Get a single article by ID.
+
+- `requester` — `404` if the article is unpublished (does not reveal existence)
+- `support_agent` / `admin` — can view any article regardless of published state
+
+**Response `200`:** Article object.
+
+**Errors:**
+- `404` — article not found or not published (for requesters)
+
+---
+
+### POST /api/kb
+
+Create a knowledge base article. Requires `support_agent` or `admin`.
+
+`author` is set from the token — not accepted from the request body.  
+`isPublished` defaults to `false` (draft) if omitted.
+
+**Body:**
+```json
+{
+  "title": "string",
+  "content": "string",
+  "category": "Hardware | Software | Access Request | Network | Cloud | Application Issue | General Support",
+  "tags": ["string"],
+  "isPublished": false
+}
+```
+
+**Response `201`:** Created article object with `author` populated.
+
+**Errors:**
+- `400` — missing required fields, invalid category, or tags not an array
+- `403` — insufficient role
+
+---
+
+### PATCH /api/kb/:id
+
+Update an article. Requires `support_agent` or `admin`.
+
+All fields are optional — only provided fields are updated.
+
+**Body (any subset):**
+```json
+{
+  "title": "string",
+  "content": "string",
+  "category": "string",
+  "tags": ["string"],
+  "isPublished": true
+}
+```
+
+**Response `200`:** Updated article object.
+
+**Errors:**
+- `400` — invalid category, tags not an array, `isPublished` not boolean, or no valid fields provided
+- `403` — insufficient role
+- `404` — article not found
+
+---
+
+### DELETE /api/kb/:id
+
+Delete an article. Requires `admin` only.
+
+**Response `204`:** No content.
+
+**Errors:**
+- `403` — insufficient role
+- `404` — article not found
+
+---
+
+### Knowledge Article Object Shape
+
+```json
+{
+  "_id": "664f1a2b3c4d5e6f7a8b9c0d",
+  "title": "How to reset your VPN credentials",
+  "content": "Step 1: Navigate to the IT portal...",
+  "category": "Network",
+  "tags": ["vpn", "credentials", "access"],
+  "author": { "_id": "...", "name": "Agent One", "email": "agent@clouddesk.dev", "role": "support_agent" },
+  "isPublished": true,
+  "createdAt": "2025-01-15T08:00:00.000Z",
+  "updatedAt": "2025-01-15T09:00:00.000Z"
+}
+```
 
 ---
 

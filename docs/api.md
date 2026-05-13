@@ -393,8 +393,78 @@ Delete an article. Requires `admin` only.
 
 ## Dashboard
 
+> Requires `Authorization: Bearer <token>`. All roles can access.  
+> `requester` sees metrics scoped to their own tickets only.  
+> `support_agent` and `admin` see metrics across all tickets.
+
+---
+
 ### GET /api/dashboard
-Returns ticket count metrics. Requires `support_agent` or `admin` role.
+
+Returns ticket count metrics and recent activity.
+
+**Response `200`:**
+```json
+{
+  "totalTickets": 12,
+  "openTickets": 7,
+  "resolvedTickets": 5,
+  "criticalTickets": 1,
+  "highPriorityTickets": 3,
+  "ticketsByStatus": {
+    "New": 2,
+    "Assigned": 1,
+    "In Progress": 3,
+    "Escalated": 1,
+    "Resolved": 4,
+    "Closed": 1
+  },
+  "ticketsByPriority": {
+    "Low": 2,
+    "Medium": 6,
+    "High": 3,
+    "Critical": 1
+  },
+  "ticketsByCategory": {
+    "Hardware": 1,
+    "Software": 2,
+    "Access Request": 4,
+    "Network": 2,
+    "Cloud": 1,
+    "Application Issue": 1,
+    "General Support": 1
+  },
+  "recentTickets": [
+    {
+      "_id": "...",
+      "title": "Cannot access VPN",
+      "status": "In Progress",
+      "priority": "High",
+      "category": "Network",
+      "requester": { "_id": "...", "name": "Jane Smith", "email": "jane@example.com", "role": "requester" },
+      "assignedTo": { "_id": "...", "name": "Agent One", "email": "agent@clouddesk.dev", "role": "support_agent" },
+      "createdAt": "2025-01-15T08:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Field definitions:**
+
+| Field | Definition |
+|---|---|
+| `openTickets` | Tickets with status: `New`, `Assigned`, `In Progress`, or `Escalated` |
+| `resolvedTickets` | Tickets with status: `Resolved` or `Closed` |
+| `criticalTickets` | Tickets with priority `Critical` (any status) |
+| `highPriorityTickets` | Tickets with priority `High` (any status) |
+| `ticketsByStatus` | Count per status — all values always present, 0 if none |
+| `ticketsByPriority` | Count per priority — all values always present, 0 if none |
+| `ticketsByCategory` | Count per category — all values always present, 0 if none |
+| `recentTickets` | 5 most recently created tickets, newest first |
+
+**Errors:**
+- `401` — not authenticated
+- `500` — server error
 
 ---
 

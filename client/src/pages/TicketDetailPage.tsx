@@ -1,8 +1,10 @@
-import { useEffect, useState, FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { getTicketById, updateTicketStatus, addComment, assignTicket } from '../api/tickets';
+import { getAssignees } from '../api/users';
 import { Ticket, TicketStatus, TICKET_STATUSES } from '../types/ticket';
+import { Assignee } from '../types/user';
 import { useAuth } from '../context/AuthContext';
 import AppLayout from '../components/AppLayout';
 
@@ -20,6 +22,11 @@ const PRIORITY_CLASSES = {
   Medium: 'bg-blue-500/20 text-blue-400',
   High: 'bg-orange-500/20 text-orange-400',
   Critical: 'bg-red-500/20 text-red-400',
+};
+
+const ROLE_LABELS: Record<string, string> = {
+  support_agent: 'Support Agent',
+  admin: 'Admin',
 };
 
 function formatDate(dateStr: string): string {
@@ -47,14 +54,24 @@ function extractMessage(err: unknown): string {
   return 'Something went wrong. Please try again.';
 }
 
+const selectClass =
+  'bg-navy-900 border border-navy-700 rounded-md px-3 py-2 text-navy-300 text-sm focus:outline-none focus:border-teal-500 transition-colors';
+
+const actionBtnClass =
+  'bg-teal-600 hover:bg-teal-500 disabled:bg-navy-700 disabled:text-navy-500 text-white text-sm font-semibold px-4 py-2 rounded-md transition-colors';
+
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const isAgentOrAdmin = user?.role === 'support_agent' || user?.role === 'admin';
 
+  // Ticket
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState('');
+
+  // Assignees dropdown
+  const [assignees, setAssignees] = useState<Assignee[]>([]);
 
   // Status update
   const [selectedStatus, setSelectedStatus] = useState<TicketStatus>('New');
@@ -62,7 +79,7 @@ export default function TicketDetailPage() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Assign
-  const [assignTo, setAssignTo] = useState('');
+  const [selectedAssignee, setSelectedAssignee] = useState('');
   const [assignError, setAssignError] = useState('');
   const [isAssigning, setIsAssigning] = useState(false);
 
@@ -72,12 +89,17 @@ export default function TicketDetailPage() {
   const [commentError, setCommentError] = useState('');
   const [isAddingComment, setIsAddingComment] = useState(false);
 
+  // Load ticket and (if agent/admin) assignees list on mount
   useEffect(() => {
     if (!id) return;
+
     getTicketById(id)
       .then((t) => {
         setTicket(t);
         setSelectedStatus(t.status);
+        if (t.assignedTo) {
+          setSelectedAssignee(t.assignedTo._id);
+        }
       })
       .catch((err) => {
         if (axios.isAxiosError(err) && err.response?.status === 404) {
@@ -89,10 +111,17 @@ export default function TicketDetailPage() {
         }
       })
       .finally(() => setIsLoading(false));
-  }, [id]);
 
-  async function handleUpdateStatus(e: FormEvent) {
-    e.preventDefault();
+    if (isAgentOrAdmin) {
+      getAssignees().then(setAssignees).catch(() => {
+        // Non-critical — dropdown will be empty but page still works
+      });
+    }
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
+  async function handleUpdateStatus() {
     if (!ticket || !id) return;
     setStatusError('');
     setIsUpdatingStatus(true);
@@ -106,15 +135,13 @@ export default function TicketDetailPage() {
     }
   }
 
-  async function handleAssign(e: FormEvent) {
-    e.preventDefault();
-    if (!ticket || !id) return;
+  async function handleAssign() {
+    if (!ticket || !id || !selectedAssignee) return;
     setAssignError('');
     setIsAssigning(true);
     try {
-      const updated = await assignTicket(id, { assignedTo: assignTo.trim() });
+      const updated = await assignTicket(id, { assignedTo: selectedAssignee });
       setTicket(updated);
-      setAssignTo('');
     } catch (err) {
       setAssignError(extractMessage(err));
     } finally {
@@ -122,7 +149,7 @@ export default function TicketDetailPage() {
     }
   }
 
-  async function handleAddComment(e: FormEvent) {
+  async function handleAddComment(e: React.FormEvent) {
     e.preventDefault();
     if (!ticket || !id || !commentBody.trim()) return;
     setCommentError('');
@@ -146,7 +173,7 @@ export default function TicketDetailPage() {
   const visibleComments =
     ticket?.comments.filter((c) => (user?.role === 'requester' ? !c.isInternal : true)) ?? [];
 
-  // ── Loading ──────────────────────────────────────────────────────────────
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <AppLayout>
@@ -157,7 +184,7 @@ export default function TicketDetailPage() {
     );
   }
 
-  // ── Error ────────────────────────────────────────────────────────────────
+  // ── Error ─────────────────────────────────────────────────────────────────
   if (pageError || !ticket) {
     return (
       <AppLayout>
@@ -173,7 +200,7 @@ export default function TicketDetailPage() {
     );
   }
 
-  // ── Detail ───────────────────────────────────────────────────────────────
+  // ── Detail ────────────────────────────────────────────────────────────────
   return (
     <AppLayout>
       <div className="p-8 max-w-4xl">
@@ -182,18 +209,14 @@ export default function TicketDetailPage() {
           ← Back to Tickets
         </Link>
 
-        {/* Title row */}
+        {/* Title + badges */}
         <div className="flex flex-wrap items-start justify-between gap-3 mt-4">
           <h1 className="text-2xl font-bold text-white leading-snug">{ticket.title}</h1>
           <div className="flex gap-2 shrink-0">
-            <span
-              className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_CLASSES[ticket.status]}`}
-            >
+            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_CLASSES[ticket.status]}`}>
               {ticket.status}
             </span>
-            <span
-              className={`text-xs px-2.5 py-1 rounded-full font-medium ${PRIORITY_CLASSES[ticket.priority]}`}
-            >
+            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${PRIORITY_CLASSES[ticket.priority]}`}>
               {ticket.priority}
             </span>
           </div>
@@ -207,8 +230,7 @@ export default function TicketDetailPage() {
           <span>Category: <span className="text-navy-300">{ticket.category}</span></span>
           <span>By: <span className="text-navy-300">{ticket.requester.name}</span></span>
           <span>
-            Assigned:{' '}
-            <span className="text-navy-300">{ticket.assignedTo?.name ?? 'Unassigned'}</span>
+            Assigned: <span className="text-navy-300">{ticket.assignedTo?.name ?? 'Unassigned'}</span>
           </span>
           <span>Created: <span className="text-navy-300">{formatDate(ticket.createdAt)}</span></span>
           {ticket.resolvedAt && (
@@ -228,7 +250,7 @@ export default function TicketDetailPage() {
           </p>
         </div>
 
-        {/* Agent / Admin actions */}
+        {/* Agent / Admin actions — plain divs, no form wrappers */}
         {isAgentOrAdmin && (
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Update Status */}
@@ -236,14 +258,12 @@ export default function TicketDetailPage() {
               <h2 className="text-xs font-semibold text-navy-400 uppercase tracking-wider mb-4">
                 Update Status
               </h2>
-              {statusError && (
-                <p className="text-red-400 text-xs mb-3">{statusError}</p>
-              )}
-              <form onSubmit={handleUpdateStatus} className="flex gap-2">
+              {statusError && <p className="text-red-400 text-xs mb-3">{statusError}</p>}
+              <div className="flex gap-2">
                 <select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value as TicketStatus)}
-                  className="flex-1 bg-navy-900 border border-navy-700 rounded-md px-3 py-2 text-navy-300 text-sm focus:outline-none focus:border-teal-500 transition-colors"
+                  className={`flex-1 ${selectClass}`}
                 >
                   {TICKET_STATUSES.map((s) => (
                     <option key={s} value={s}>
@@ -252,13 +272,14 @@ export default function TicketDetailPage() {
                   ))}
                 </select>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleUpdateStatus}
                   disabled={isUpdatingStatus || selectedStatus === ticket.status}
-                  className="bg-teal-600 hover:bg-teal-500 disabled:bg-navy-700 disabled:text-navy-500 text-white text-sm font-semibold px-4 py-2 rounded-md transition-colors"
+                  className={actionBtnClass}
                 >
                   {isUpdatingStatus ? 'Saving…' : 'Update'}
                 </button>
-              </form>
+              </div>
             </div>
 
             {/* Assign Ticket */}
@@ -270,25 +291,29 @@ export default function TicketDetailPage() {
                 Currently:{' '}
                 <span className="text-navy-300">{ticket.assignedTo?.name ?? 'Unassigned'}</span>
               </p>
-              {assignError && (
-                <p className="text-red-400 text-xs mb-3">{assignError}</p>
-              )}
-              <form onSubmit={handleAssign} className="flex gap-2">
-                <input
-                  type="text"
-                  value={assignTo}
-                  onChange={(e) => setAssignTo(e.target.value)}
-                  placeholder="User ID"
-                  className="flex-1 bg-navy-900 border border-navy-700 rounded-md px-3 py-2 text-navy-300 placeholder-navy-600 text-sm focus:outline-none focus:border-teal-500 transition-colors font-mono"
-                />
+              {assignError && <p className="text-red-400 text-xs mb-3">{assignError}</p>}
+              <div className="flex gap-2">
+                <select
+                  value={selectedAssignee}
+                  onChange={(e) => setSelectedAssignee(e.target.value)}
+                  className={`flex-1 ${selectClass}`}
+                >
+                  <option value="">— Select assignee —</option>
+                  {assignees.map((a) => (
+                    <option key={a._id} value={a._id}>
+                      {a.name} — {a.email} · {ROLE_LABELS[a.role] ?? a.role}
+                    </option>
+                  ))}
+                </select>
                 <button
-                  type="submit"
-                  disabled={isAssigning || !assignTo.trim()}
-                  className="bg-teal-600 hover:bg-teal-500 disabled:bg-navy-700 disabled:text-navy-500 text-white text-sm font-semibold px-4 py-2 rounded-md transition-colors"
+                  type="button"
+                  onClick={handleAssign}
+                  disabled={isAssigning || !selectedAssignee}
+                  className={actionBtnClass}
                 >
                   {isAssigning ? 'Assigning…' : 'Assign'}
                 </button>
-              </form>
+              </div>
             </div>
           </div>
         )}
@@ -299,7 +324,6 @@ export default function TicketDetailPage() {
             Comments ({visibleComments.length})
           </h2>
 
-          {/* Comment list */}
           <div className="space-y-3">
             {visibleComments.length === 0 && (
               <p className="text-navy-500 text-sm py-4">No comments yet.</p>
@@ -315,7 +339,9 @@ export default function TicketDetailPage() {
               >
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-sm font-medium text-white">{comment.author.name}</span>
-                  <span className="text-xs text-navy-500">{comment.author.role.replace('_', ' ')}</span>
+                  <span className="text-xs text-navy-500">
+                    {comment.author.role.replace('_', ' ')}
+                  </span>
                   {comment.isInternal && (
                     <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 font-medium">
                       Internal
@@ -330,7 +356,7 @@ export default function TicketDetailPage() {
             ))}
           </div>
 
-          {/* Add comment form */}
+          {/* Add comment — intentional form submit */}
           <form
             onSubmit={handleAddComment}
             className="mt-4 bg-navy-800 border border-navy-700 rounded-lg p-5"
@@ -338,9 +364,7 @@ export default function TicketDetailPage() {
             <h3 className="text-xs font-semibold text-navy-400 uppercase tracking-wider mb-3">
               Add Comment
             </h3>
-            {commentError && (
-              <p className="text-red-400 text-xs mb-3">{commentError}</p>
-            )}
+            {commentError && <p className="text-red-400 text-xs mb-3">{commentError}</p>}
             <textarea
               rows={3}
               required
@@ -366,7 +390,7 @@ export default function TicketDetailPage() {
               <button
                 type="submit"
                 disabled={isAddingComment || !commentBody.trim()}
-                className="bg-teal-600 hover:bg-teal-500 disabled:bg-navy-700 disabled:text-navy-500 text-white text-sm font-semibold px-4 py-2 rounded-md transition-colors"
+                className={actionBtnClass}
               >
                 {isAddingComment ? 'Posting…' : 'Post Comment'}
               </button>

@@ -20,6 +20,11 @@ Before AWS deployment, two foundational pieces were added:
 - No MongoDB required in CI — build validation only
 - CD (deploy to AWS) is Stage 2 work
 
+**AWS Deployment Planning**
+- `docs/aws-deployment-runbook.md` — full step-by-step deployment guide: MongoDB Atlas, EC2, Docker Compose, S3, CloudFront, smoke test checklist, rollback and teardown plans
+- `docs/aws-cost-control.md` — budget alerts, billing alarms, low-cost architecture choices, teardown checklist, cost risk notes
+- Actual AWS deployment is Stage 2 work
+
 ---
 
 ## Stage 2 — AWS Deployment

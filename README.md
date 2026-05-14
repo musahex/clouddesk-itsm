@@ -377,6 +377,8 @@ Stage 1 deliberately excludes AWS deployment, S3, CloudWatch, and ServiceNow int
 | [Architecture](docs/architecture.md) | System design, auth flow, RBAC, data models, folder structure |
 | [API Reference](docs/api.md) | Full endpoint documentation with request/response examples |
 | [Local Deployment](docs/local-deployment.md) | Docker Compose setup, troubleshooting, and common commands |
+| [AWS Deployment Runbook](docs/aws-deployment-runbook.md) | Step-by-step EC2 + S3 + CloudFront deployment guide |
+| [AWS Cost Control](docs/aws-cost-control.md) | Budget alerts, teardown checklist, cost risk notes |
 | [Stage 1 Case Study](docs/stage-1-case-study.md) | Project write-up for portfolio review |
 | [Future Roadmap](docs/future-roadmap.md) | Stage 2–4 plans including AWS, monitoring, and ServiceNow mapping |
 

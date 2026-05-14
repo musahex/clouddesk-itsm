@@ -1,0 +1,27 @@
+services:
+  api:
+    build: ./server
+    container_name: clouddesk-api
+    ports:
+      - "5001:5001"
+    environment:
+      PORT: 5001
+      MONGO_URI: mongodb://mongo:27017/clouddesk
+      JWT_SECRET: local_docker_dev_secret_change_later
+      NODE_ENV: development
+      CLIENT_URL: http://localhost:5173
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    container_name: clouddesk-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - clouddesk-mongo-data:/data/db
+    restart: unless-stopped
+
+volumes:
+  clouddesk-mongo-data:

@@ -189,6 +189,53 @@ Then open `http://localhost:5173` and log in with any demo credential.
 
 ---
 
+## Run API + MongoDB with Docker Compose
+
+An alternative to running MongoDB and the server locally — Docker Compose handles both. The React client still runs locally.
+
+### Start
+
+```bash
+docker compose up --build
+```
+
+API: `http://localhost:5001` · MongoDB: `localhost:27017`
+
+On first startup the default dev admin is auto-created (`admin@clouddesk.com / admin`).
+
+### Start the React client (separate terminal)
+
+```bash
+cd client && npm run dev
+```
+
+Vite proxies `/api` to `http://localhost:5001` automatically. Open `http://localhost:5173`.
+
+### Seed demo users inside Docker
+
+```bash
+docker compose exec api npm run seed
+```
+
+### Create a production-style admin inside Docker
+
+```bash
+docker compose exec api \
+  sh -c 'ADMIN_NAME="Ops Admin" ADMIN_EMAIL="ops@example.com" ADMIN_PASSWORD="StrongPass123!" npm run create-admin'
+```
+
+### Stop
+
+```bash
+docker compose down          # stop, keep data
+docker compose down -v       # stop and delete MongoDB volume
+docker compose logs -f api   # stream API logs
+```
+
+See [docs/local-deployment.md](docs/local-deployment.md) for the full local deployment guide including troubleshooting.
+
+---
+
 ## Environment Variables
 
 | Variable | Required | Description |
@@ -306,7 +353,7 @@ Stage 1 is a fully functional local MVP. It includes:
 - [x] Seed script (demo users)
 - [x] Documentation (README, architecture, API reference, case study, roadmap)
 
-Stage 1 deliberately excludes AWS deployment, Docker, CI/CD, S3, CloudWatch, and ServiceNow integration. These are covered in the future roadmap.
+Stage 1 deliberately excludes AWS deployment, CI/CD, S3, CloudWatch, and ServiceNow integration. Local Docker Compose deployment (API + MongoDB) is part of the Chapter 2 foundation.
 
 ---
 
@@ -316,6 +363,7 @@ Stage 1 deliberately excludes AWS deployment, Docker, CI/CD, S3, CloudWatch, and
 |---|---|
 | [Architecture](docs/architecture.md) | System design, auth flow, RBAC, data models, folder structure |
 | [API Reference](docs/api.md) | Full endpoint documentation with request/response examples |
+| [Local Deployment](docs/local-deployment.md) | Docker Compose setup, troubleshooting, and common commands |
 | [Stage 1 Case Study](docs/stage-1-case-study.md) | Project write-up for portfolio review |
 | [Future Roadmap](docs/future-roadmap.md) | Stage 2–4 plans including AWS, monitoring, and ServiceNow mapping |
 

@@ -4,6 +4,18 @@ Stage 1 is a fully functional local MVP. This document outlines the planned prog
 
 ---
 
+## Chapter 2 Foundation — Local Docker Compose (Complete)
+
+Before AWS deployment, the API and MongoDB were containerised for local use:
+
+- `server/Dockerfile` — Node 20 Alpine, TypeScript compile, `npm start`
+- `docker-compose.yml` — `clouddesk-api` + `clouddesk-mongo` services, named volume for persistence
+- React client remains on `npm run dev` locally; Vite proxies `/api` to the container
+
+This establishes the container image that will be pushed to ECR and run on ECS in Stage 2.
+
+---
+
 ## Stage 2 — AWS Deployment
 
 **Goal:** Deploy CloudDesk to a production-grade AWS environment accessible via a public URL.
@@ -21,7 +33,7 @@ Stage 1 is a fully functional local MVP. This document outlines the planned prog
 
 ### Tasks
 
-- Dockerise the Express API (`Dockerfile` + `docker-compose` for local parity)
+- [x] Dockerise the Express API (`Dockerfile` + `docker-compose` for local parity) — complete
 - Set up MongoDB Atlas cluster with IP allowlist and Atlas user
 - Create ECS task definition or EC2 launch template
 - Configure Application Load Balancer with HTTPS listener

@@ -4,15 +4,21 @@ Stage 1 is a fully functional local MVP. This document outlines the planned prog
 
 ---
 
-## Chapter 2 Foundation — Local Docker Compose (Complete)
+## Chapter 2 Foundation (Complete)
 
-Before AWS deployment, the API and MongoDB were containerised for local use:
+Before AWS deployment, two foundational pieces were added:
 
+**Local Docker Compose**
 - `server/Dockerfile` — Node 20 Alpine, TypeScript compile, `npm start`
 - `docker-compose.yml` — `clouddesk-api` + `clouddesk-mongo` services, named volume for persistence
 - React client remains on `npm run dev` locally; Vite proxies `/api` to the container
+- This establishes the container image that will be pushed to ECR and run on ECS in Stage 2
 
-This establishes the container image that will be pushed to ECR and run on ECS in Stage 2.
+**GitHub Actions CI**
+- `.github/workflows/ci.yml` — two jobs (`server`, `client`) run on push and PR to `main`
+- Each job: `npm ci` + `npm run build` — validates TypeScript compilation and Vite build
+- No MongoDB required in CI — build validation only
+- CD (deploy to AWS) is Stage 2 work
 
 ---
 
@@ -70,8 +76,8 @@ This establishes the container image that will be pushed to ECR and run on ECS i
 
 ### CI/CD
 
-- **GitHub Actions** — Run `tsc --noEmit` and `eslint` on pull requests
-- **Deploy on merge to main** — Build Docker image, push to ECR, update ECS service
+- **CI** — ✅ GitHub Actions build validation on push/PR to `main` (complete — see Chapter 2 Foundation)
+- **CD** — Deploy on merge to main: build Docker image, push to ECR, update ECS service
 - **Environment promotion** — Staging environment mirrors production; merge to `main` deploys to staging, manual approval promotes to production
 
 ---

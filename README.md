@@ -294,6 +294,19 @@ If `ADMIN_EMAIL` already exists in the database, the script exits with an error 
 
 ---
 
+## Quality Checks
+
+GitHub Actions validates both builds on every push and pull request to `main`.
+
+Run the same checks locally:
+
+```bash
+cd server && npm run build
+cd client && npm run build
+```
+
+---
+
 ## API Overview
 
 Base URL: `http://localhost:5001/api`
@@ -353,7 +366,7 @@ Stage 1 is a fully functional local MVP. It includes:
 - [x] Seed script (demo users)
 - [x] Documentation (README, architecture, API reference, case study, roadmap)
 
-Stage 1 deliberately excludes AWS deployment, CI/CD, S3, CloudWatch, and ServiceNow integration. Local Docker Compose deployment (API + MongoDB) is part of the Chapter 2 foundation.
+Stage 1 deliberately excludes AWS deployment, S3, CloudWatch, and ServiceNow integration. Local Docker Compose deployment and GitHub Actions CI are part of the Chapter 2 foundation.
 
 ---
 

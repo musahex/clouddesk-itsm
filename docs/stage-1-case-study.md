@@ -115,7 +115,7 @@ Several implementation decisions reflect real service desk thinking rather than 
 | Sensitive fields | `select: '-password'` excluded from all user queries; `requester` set from JWT, not request body |
 | Input validation | Required field checks on all write endpoints; enum validation via Mongoose schema |
 | Password requirements | Min 8 characters, one uppercase, one lowercase, one number — enforced server-side on registration and admin creation |
-| Role lockdown | Public registration always creates `requester` — any `role` field in the request body is silently ignored |
+| Role lockdown | Public registration always creates `requester` — any `role` field in the request body is silently ignored. `support_agent` accounts are created by admins via `POST /api/users/support-agents` (`/admin/support-agents/new`) |
 | Rate limiting | 200 requests / 15 min globally; stricter 20 requests / 15 min on `/api/auth` endpoints |
 | Security headers | Helmet sets `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`, and related headers on all responses |
 | Admin bootstrap | Dev admin (`admin@clouddesk.com`) auto-created once at startup when `NODE_ENV !== production` — never runs in production; weak password intentional and clearly documented |

@@ -39,6 +39,7 @@ The goal was to build something that an Australian IT hiring manager could look 
 - **Knowledge Base** — Agents create, edit, and publish articles; requesters browse and search published content
 - **KB Search** — Search by title, content, category, and tags via dedicated search endpoint
 - **Dashboard Metrics** — Ticket counts, status/priority/category breakdowns, and recent tickets — scoped by role
+- **Support Agent Creation** — Admin-only browser page (`/admin/support-agents/new`) creates `support_agent` accounts with password validation
 - **Seed Script** — One-command demo user creation for local testing
 
 ---
@@ -148,7 +149,14 @@ JWT_SECRET=your-secret-key-change-this
 npm run dev
 ```
 
-Server runs on `http://localhost:5001`.
+Server runs on `http://localhost:5001`. On first startup in development (`NODE_ENV !== production`), a default admin account is automatically created:
+
+```
+Email:    admin@clouddesk.com
+Password: admin
+```
+
+This account is skipped silently if it already exists and is never created in production.
 
 ### 4. Seed demo users
 

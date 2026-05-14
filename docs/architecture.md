@@ -56,7 +56,8 @@ server/src/
 ├── middleware/
 │   └── auth.ts           # authMiddleware + requireRole()
 ├── scripts/
-│   └── seed.ts           # Demo user seeder
+│   ├── seed.ts           # Demo user seeder
+│   └── createAdmin.ts    # Production admin creation CLI
 └── types/
     └── express.d.ts      # Augments Express Request with req.user
 ```
@@ -65,12 +66,13 @@ server/src/
 
 ```
 client/src/
-├── App.tsx               # BrowserRouter, route definitions, PublicRoute/ProtectedRoute
+├── App.tsx               # BrowserRouter, route definitions, PublicRoute/ProtectedRoute/AdminRoute
 ├── context/
 │   └── AuthContext.tsx   # JWT storage, user state, rehydration from localStorage
 ├── components/
-│   ├── AppLayout.tsx     # Sidebar navigation, user info, sign out
-│   └── ProtectedRoute.tsx
+│   ├── AppLayout.tsx     # Sidebar navigation, user info, sign out; admin-only nav section
+│   ├── ProtectedRoute.tsx  # Redirects unauthenticated users to /login
+│   └── AdminRoute.tsx    # Extends ProtectedRoute — also redirects non-admins to /dashboard
 ├── pages/
 │   ├── LoginPage.tsx
 │   ├── RegisterPage.tsx
@@ -81,7 +83,8 @@ client/src/
 │   ├── KnowledgeBasePage.tsx
 │   ├── KnowledgeArticlePage.tsx
 │   ├── CreateKnowledgeArticlePage.tsx
-│   └── EditKnowledgeArticlePage.tsx
+│   ├── EditKnowledgeArticlePage.tsx
+│   └── CreateSupportAgentPage.tsx  # Admin-only; creates support_agent accounts
 ├── api/                  # Axios wrappers — one file per domain
 │   ├── http.ts           # Axios instance with Bearer token interceptor
 │   ├── tickets.ts
@@ -126,11 +129,18 @@ Three roles are defined on the `User` model and encoded in the JWT:
 |---|---|
 | `requester` | End users who submit and track tickets |
 | `support_agent` | IT support staff who triage, update, and resolve tickets |
-| `admin` | Full access including KB article deletion |
+| `admin` | Full access including KB article deletion and support agent account creation |
 
 RBAC is enforced at the API level using `requireRole(...roles)` middleware — it is not sufficient to manipulate the UI. Requesters who attempt agent/admin endpoints receive a `403 Forbidden` response regardless of the frontend state.
 
 **Client-side RBAC** only affects UI rendering (showing/hiding buttons and forms). It is not a security boundary — all enforcement happens server-side.
+
+**Account creation model:**
+- `requester` — self-registration via `POST /api/auth/register`. Any `role` field in the body is silently ignored.
+- `support_agent` — created by an admin via `POST /api/users/support-agents` (frontend: `/admin/support-agents/new`). Public registration cannot create this role.
+- `admin` — created via the `create-admin` CLI script in production (`npm run create-admin` in `server/`). In development, a default admin (`admin@clouddesk.com / admin`) is auto-created at startup when `NODE_ENV !== production`.
+
+The `AdminRoute` component wraps admin-only frontend pages. It redirects unauthenticated users to `/login` and non-admin authenticated users to `/dashboard`.
 
 ---
 

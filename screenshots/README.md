@@ -3,7 +3,7 @@
 This folder holds portfolio screenshots for the README. Capture them with the app running locally after seeding demo users.
 
 **Setup before capturing:**
-1. `cd server && npm run dev` (port 5000)
+1. `cd server && npm run dev` (port 5001)
 2. `cd client && npm run dev` (port 5173)
 3. `cd server && npm run seed` (creates demo users if not already present)
 

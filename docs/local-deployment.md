@@ -38,16 +38,27 @@ Vite's dev server with hot-module replacement is not suited to Docker in local d
 
 ---
 
+## Docker Compose Files
+
+| File | Purpose | MongoDB | Env source |
+|---|---|---|---|
+| `docker-compose.yml` | Local development | Bundled mongo:7 container | Inline in compose file |
+| `docker-compose.prod.yml` | EC2 production deployment | MongoDB Atlas (external) | `server/.env` |
+
+Use `docker-compose.yml` locally. Use `docker-compose.prod.yml` on EC2. Never run `docker-compose.prod.yml` locally without a valid `server/.env` — it will fail env validation because `MONGO_URI` and `JWT_SECRET` are not bundled in that file.
+
+---
+
 ## Environment Validation
 
-The API uses `server/src/config/env.ts` to validate environment variables at startup. When running via Docker Compose:
+The API uses `server/src/config/env.ts` to validate environment variables at startup. When running via `docker-compose.yml`:
 
 - `MONGO_URI` and `JWT_SECRET` are both set in `docker-compose.yml` — validation passes automatically
 - `NODE_ENV=development` — the default dev admin is auto-created on first run
 - `PORT=5001` — the API always listens on 5001
 - `CLIENT_URL=http://localhost:5173` — CORS allows the local Vite dev server
 
-You do **not** need a `server/.env` file when using Docker Compose — all values are supplied by the compose file.
+You do **not** need a `server/.env` file when using `docker-compose.yml` — all values are supplied by the compose file.
 
 ---
 

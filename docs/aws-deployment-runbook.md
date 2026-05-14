@@ -169,34 +169,11 @@ nano server/.env
 
 ### Step 7 — Start the API
 
-The production deployment uses only the API container — MongoDB runs on Atlas, not locally.
-
-Create a minimal `docker-compose.prod.yml` (or override values inline):
+The repo includes `docker-compose.prod.yml` for production deployments. It runs only the `api` service — MongoDB runs on Atlas, not locally. All config is loaded from `server/.env`.
 
 ```bash
-cd clouddesk-itsm
-
-# Start only the api service; mongo service not needed (using Atlas)
-docker compose up -d api
-```
-
-Alternatively, edit `docker-compose.yml` directly for production: remove the `mongo` service and volume, and update environment to read from the `.env` file:
-
-```yaml
-services:
-  api:
-    build: ./server
-    env_file: ./server/.env
-    ports:
-      - "5001:5001"
-    restart: unless-stopped
-```
-
-Then:
-
-```bash
-docker compose up -d --build
-docker compose logs api --tail=30
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml logs api --tail=30
 ```
 
 Expected output:
@@ -205,7 +182,24 @@ clouddesk-api | MongoDB connected
 clouddesk-api | CloudDesk API running on http://localhost:5001
 ```
 
-Note: `bootstrapDevAdmin` is skipped because `NODE_ENV=production`.
+Note: `bootstrapDevAdmin` is skipped because `NODE_ENV=production` in `server/.env`.
+
+**Useful production commands:**
+
+```bash
+# View live logs
+docker compose -f docker-compose.prod.yml logs -f api
+
+# Restart after a config change
+docker compose -f docker-compose.prod.yml restart api
+
+# Pull latest code and rebuild
+git pull
+docker compose -f docker-compose.prod.yml up -d --build
+
+# Stop
+docker compose -f docker-compose.prod.yml down
+```
 
 ### Step 8 — Smoke test the API
 

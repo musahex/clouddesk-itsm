@@ -189,7 +189,16 @@ Then open `http://localhost:5173` and log in with any demo credential.
 
 ---
 
-## Run API + MongoDB with Docker Compose
+## Docker Compose Files
+
+| File | Use | MongoDB |
+|---|---|---|
+| `docker-compose.yml` | Local development | Bundled mongo:7 container |
+| `docker-compose.prod.yml` | EC2 production | MongoDB Atlas via `server/.env` |
+
+---
+
+## Run API + MongoDB with Docker Compose (Local)
 
 An alternative to running MongoDB and the server locally — Docker Compose handles both. The React client still runs locally.
 
@@ -233,6 +242,31 @@ docker compose logs -f api   # stream API logs
 ```
 
 See [docs/local-deployment.md](docs/local-deployment.md) for the full local deployment guide including troubleshooting.
+
+---
+
+## Run API on EC2 with Docker Compose (Production)
+
+`docker-compose.prod.yml` runs only the API container. MongoDB runs on Atlas. Config is loaded from `server/.env`.
+
+Create `server/.env` on EC2:
+
+```env
+PORT=5001
+MONGO_URI=mongodb+srv://<user>:<pass>@cluster0.xxxxx.mongodb.net/clouddesk?retryWrites=true&w=majority
+JWT_SECRET=<output of: openssl rand -hex 32>
+NODE_ENV=production
+CLIENT_URL=https://<your-cloudfront-domain>.cloudfront.net
+```
+
+Then start the container:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml logs api --tail=20
+```
+
+See [docs/aws-deployment-runbook.md](docs/aws-deployment-runbook.md) for the full EC2 deployment sequence.
 
 ---
 

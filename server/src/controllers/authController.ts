@@ -3,13 +3,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { validatePassword } from '../utils/validatePassword';
+import { env } from '../config/env';
 
 function generateToken(id: string, role: string, name: string): string {
-  return jwt.sign(
-    { id, role, name },
-    process.env.JWT_SECRET as string,
-    { expiresIn: '7d' }
-  );
+  return jwt.sign({ id, role, name }, env.jwtSecret, { expiresIn: '7d' });
 }
 
 export async function register(req: Request, res: Response): Promise<void> {

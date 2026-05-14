@@ -60,12 +60,16 @@ Before starting, confirm each item:
 
 - [ ] GitHub Actions CI is passing on `main` (both `server` and `client` jobs green)
 - [ ] `docker compose up --build` works locally and `curl http://localhost:5001/api/health` returns `{"status":"ok"}`
-- [ ] Strong `JWT_SECRET` generated — at least 32 random characters (e.g. `openssl rand -hex 32`)
+- [ ] Environment validation passes locally — no startup errors with a valid `.env`
+- [ ] `NODE_ENV=production` will be set in the production `.env`
+- [ ] `CLIENT_URL` is set to the production frontend URL (required — server refuses to start without it in production)
+- [ ] Strong `JWT_SECRET` generated — at least 32 characters (`openssl rand -hex 32`); the server enforces this minimum length in production
 - [ ] MongoDB Atlas account created, cluster provisioned, connection string ready
 - [ ] AWS account ready, region selected (e.g. `ap-southeast-2` for Australia)
 - [ ] AWS Budget alert created (see `docs/aws-cost-control.md`)
 - [ ] Production `.env` values prepared (not committed to repo)
 - [ ] Domain name decision made (custom domain or CloudFront/EC2 default URLs for now)
+- [ ] Full production readiness checklist reviewed: `docs/production-readiness-checklist.md`
 
 ---
 

@@ -38,6 +38,19 @@ Vite's dev server with hot-module replacement is not suited to Docker in local d
 
 ---
 
+## Environment Validation
+
+The API uses `server/src/config/env.ts` to validate environment variables at startup. When running via Docker Compose:
+
+- `MONGO_URI` and `JWT_SECRET` are both set in `docker-compose.yml` — validation passes automatically
+- `NODE_ENV=development` — the default dev admin is auto-created on first run
+- `PORT=5001` — the API always listens on 5001
+- `CLIENT_URL=http://localhost:5173` — CORS allows the local Vite dev server
+
+You do **not** need a `server/.env` file when using Docker Compose — all values are supplied by the compose file.
+
+---
+
 ## Prerequisites
 
 - Docker Desktop (or Docker Engine + Docker Compose plugin)

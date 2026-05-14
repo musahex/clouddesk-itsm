@@ -1,32 +1,20 @@
+import { env } from './config/env';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import apiRoutes from './routes/index';
 import User from './models/User';
 
-dotenv.config();
-
-// Fail fast — auth cannot function without a JWT secret
-if (!process.env.JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET environment variable is not set. Set it in .env and restart.');
-  process.exit(1);
-}
-
 const app = express();
-const PORT = process.env.PORT || 5001;
 
 // Security headers
 app.use(helmet());
 
-// CORS — always allow localhost:5173 in dev; honour CLIENT_URL in production
-const allowedOrigins = ['http://localhost:5173'];
-if (process.env.CLIENT_URL) {
-  allowedOrigins.push(process.env.CLIENT_URL);
-}
+// CORS — always allow localhost:5173; also allow CLIENT_URL if it differs (production)
+const allowedOrigins = [...new Set(['http://localhost:5173', env.clientUrl])];
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -69,7 +57,7 @@ app.use('/api', apiRoutes);
 // Intentionally bypasses password validation — dev convenience account.
 // Skipped entirely when NODE_ENV === 'production'.
 async function bootstrapDevAdmin(): Promise<void> {
-  if (process.env.NODE_ENV === 'production') return;
+  if (env.isProduction) return;
 
   const email = 'admin@clouddesk.com';
   const existing = await User.findOne({ email });
@@ -85,15 +73,11 @@ async function bootstrapDevAdmin(): Promise<void> {
 
 async function start() {
   try {
-    if (process.env.MONGO_URI) {
-      await mongoose.connect(process.env.MONGO_URI);
-      console.log('MongoDB connected');
-      await bootstrapDevAdmin();
-    } else {
-      console.warn('MONGO_URI not set — skipping database connection');
-    }
-    app.listen(PORT, () => {
-      console.log(`CloudDesk API running on http://localhost:${PORT}`);
+    await mongoose.connect(env.mongoUri);
+    console.log('MongoDB connected');
+    await bootstrapDevAdmin();
+    app.listen(env.port, () => {
+      console.log(`CloudDesk API running on http://localhost:${env.port}`);
     });
   } catch (err) {
     console.error('Server startup error:', err);

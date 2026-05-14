@@ -294,6 +294,20 @@ If `ADMIN_EMAIL` already exists in the database, the script exits with an error 
 
 ---
 
+## Production Readiness
+
+Environment validation runs at server startup via `server/src/config/env.ts`. The server refuses to start if `MONGO_URI` or `JWT_SECRET` are missing. In production (`NODE_ENV=production`), the server additionally requires `JWT_SECRET` to be at least 32 characters and `CLIENT_URL` to be set.
+
+Key production behaviours:
+- Default dev admin (`admin@clouddesk.com / admin`) is **never created** when `NODE_ENV=production`
+- Use `npm run create-admin` (in `server/`) to create the first production admin
+- Public registration always creates `requester` accounts — role cannot be set via the API
+- Support agents are created by admins at `/admin/support-agents/new`
+
+See [docs/production-readiness-checklist.md](docs/production-readiness-checklist.md) for the full pre-deployment checklist.
+
+---
+
 ## Quality Checks
 
 GitHub Actions validates both builds on every push and pull request to `main`.
@@ -379,6 +393,7 @@ Stage 1 deliberately excludes AWS deployment, S3, CloudWatch, and ServiceNow int
 | [Local Deployment](docs/local-deployment.md) | Docker Compose setup, troubleshooting, and common commands |
 | [AWS Deployment Runbook](docs/aws-deployment-runbook.md) | Step-by-step EC2 + S3 + CloudFront deployment guide |
 | [AWS Cost Control](docs/aws-cost-control.md) | Budget alerts, teardown checklist, cost risk notes |
+| [Production Readiness Checklist](docs/production-readiness-checklist.md) | Pre-deployment, security, smoke test, and teardown checklist |
 | [Stage 1 Case Study](docs/stage-1-case-study.md) | Project write-up for portfolio review |
 | [Future Roadmap](docs/future-roadmap.md) | Stage 2–4 plans including AWS, monitoring, and ServiceNow mapping |
 

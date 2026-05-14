@@ -61,6 +61,7 @@ Operational visibility is critical for service desk management. The dashboard sh
 | KB search | `GET /api/kb/search` — title, content, category, tags; unpublished visible to agents |
 | Dashboard metrics | 9 parallel MongoDB queries, zero-filled response shape, role-scoped aggregation |
 | Assignee dropdown | `GET /api/users/assignees` — returns agents and admins for assignment UI |
+| Support agent creation | `POST /api/users/support-agents` — admin-only; creates `support_agent` accounts via browser UI |
 | Seed script | `npm run seed` — idempotent demo user creation |
 
 ---
@@ -79,7 +80,7 @@ Ticket comments are embedded as a subdocument array on the Ticket document rathe
 
 The React SPA uses React Context for authentication state and Axios for API calls. The `api/` folder mirrors the server's route structure — one file per domain (`tickets.ts`, `kb.ts`, `dashboard.ts`) — making it easy to locate the call site for any API interaction.
 
-Role-based UI rendering uses the `user.role` value from `AuthContext`. The `ProtectedRoute` component prevents unauthenticated access. Role guards inside agent/admin-only pages (`CreateKnowledgeArticlePage`, `EditKnowledgeArticlePage`) redirect requesters to the KB list rather than showing an error — a better user experience.
+Role-based UI rendering uses the `user.role` value from `AuthContext`. The `ProtectedRoute` component prevents unauthenticated access. The `AdminRoute` component additionally redirects non-admin users to `/dashboard`. Role guards inside agent/admin-only pages (`CreateKnowledgeArticlePage`, `EditKnowledgeArticlePage`) redirect requesters to the KB list rather than showing an error — a better user experience.
 
 ### TypeScript Throughout
 
@@ -110,9 +111,15 @@ Several implementation decisions reflect real service desk thinking rather than 
 | Password storage | bcryptjs with salt rounds 10 — passwords never returned in API responses |
 | Authentication | JWT verified server-side on every protected request |
 | Authorisation | RBAC enforced in middleware — frontend role checks are UX only |
-| Token secret | `JWT_SECRET` in environment variable — not committed to source control |
+| Token secret | `JWT_SECRET` in environment variable — not committed to source control; server refuses to start without it |
 | Sensitive fields | `select: '-password'` excluded from all user queries; `requester` set from JWT, not request body |
 | Input validation | Required field checks on all write endpoints; enum validation via Mongoose schema |
+| Password requirements | Min 8 characters, one uppercase, one lowercase, one number — enforced server-side on registration and admin creation |
+| Role lockdown | Public registration always creates `requester` — any `role` field in the request body is silently ignored |
+| Rate limiting | 200 requests / 15 min globally; stricter 20 requests / 15 min on `/api/auth` endpoints |
+| Security headers | Helmet sets `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`, and related headers on all responses |
+| Admin bootstrap | Dev admin (`admin@clouddesk.com`) auto-created once at startup when `NODE_ENV !== production` — never runs in production; weak password intentional and clearly documented |
+| Production admin creation | Separate `create-admin` CLI script; validates password strength, checks email uniqueness, requires env vars — no weak credentials accepted |
 | `.env` files | Listed in `.gitignore`; `.env.example` provides template |
 
 ---

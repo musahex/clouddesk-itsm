@@ -11,6 +11,8 @@ Tokens are returned by `/api/auth/login` and `/api/auth/register`. They expire a
 
 All error responses use the shape `{ "message": "string" }`.
 
+**Security:** The API requires `JWT_SECRET` to be set at startup. All routes are protected by Helmet security headers. A general rate limit of 200 requests per 15 minutes per IP applies across all endpoints. Auth endpoints (`/auth/register`, `/auth/login`) have a stricter limit of 20 requests per 15 minutes per IP.
+
 ---
 
 ## Health
@@ -30,15 +32,16 @@ Returns server status. No auth required.
 
 ### POST /api/auth/register
 
-Register a new user. `role` defaults to `requester` if omitted.
+Register a new user. Public registration always creates a `requester` account — any `role` field in the request body is ignored. Support agent accounts are created by an admin via `POST /api/users/support-agents`. Admin accounts are created via the `create-admin` CLI script.
+
+**Password requirements:** minimum 8 characters, at least one uppercase letter, one lowercase letter, and one number.
 
 **Body:**
 ```json
 {
   "name": "string",
   "email": "string",
-  "password": "string",
-  "role": "requester | support_agent | admin"
+  "password": "string"
 }
 ```
 
@@ -56,7 +59,8 @@ Register a new user. `role` defaults to `requester` if omitted.
 ```
 
 **Errors:**
-- `400` — missing required fields, invalid role, or email already registered
+- `400` — missing required fields, password does not meet requirements, or email already registered
+- `429` — rate limit exceeded (20 attempts per 15 minutes per IP)
 - `500` — server error
 
 ---
@@ -86,6 +90,7 @@ Login and receive a JWT.
 **Errors:**
 - `400` — missing fields
 - `401` — invalid credentials
+- `429` — rate limit exceeded (20 attempts per 15 minutes per IP)
 - `500` — server error
 
 ---
@@ -124,6 +129,43 @@ Requires `support_agent` or `admin` role.
 
 **Errors:**
 - `403` — insufficient role (requesters cannot access this endpoint)
+
+---
+
+### POST /api/users/support-agents
+
+Create a new support agent account. Admin-only.
+
+Any `role` field in the request body is ignored — the created user always receives `support_agent`.
+
+**Body:**
+```json
+{
+  "name": "string",
+  "email": "string",
+  "password": "string"
+}
+```
+
+**Password requirements:** minimum 8 characters, at least one uppercase letter, one lowercase letter, and one number.
+
+**Response `201`:**
+```json
+{
+  "user": {
+    "id": "664f1a2b3c4d5e6f7a8b9c0d",
+    "name": "New Agent",
+    "email": "agent@example.com",
+    "role": "support_agent"
+  }
+}
+```
+
+**Errors:**
+- `400` — missing required fields, password does not meet requirements, or email already registered
+- `401` — no token or invalid token
+- `403` — caller is not an admin
+- `500` — server error
 
 ---
 

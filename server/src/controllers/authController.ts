@@ -2,8 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
-
-const VALID_ROLES = ['requester', 'support_agent', 'admin'];
+import { validatePassword } from '../utils/validatePassword';
 
 function generateToken(id: string, role: string, name: string): string {
   return jwt.sign(
@@ -14,15 +13,16 @@ function generateToken(id: string, role: string, name: string): string {
 }
 
 export async function register(req: Request, res: Response): Promise<void> {
-  const { name, email, password, role } = req.body;
+  const { name, email, password } = req.body;
 
   if (!name || !email || !password) {
     res.status(400).json({ message: 'Name, email, and password are required' });
     return;
   }
 
-  if (role && !VALID_ROLES.includes(role)) {
-    res.status(400).json({ message: `Role must be one of: ${VALID_ROLES.join(', ')}` });
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    res.status(400).json({ message: passwordError });
     return;
   }
 
@@ -34,12 +34,8 @@ export async function register(req: Request, res: Response): Promise<void> {
     }
 
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({
-      name,
-      email,
-      password: hashed,
-      role: role || 'requester',
-    });
+    // Role is always requester for public registration — ignored from request body
+    const user = await User.create({ name, email, password: hashed, role: 'requester' });
 
     const token = generateToken(user.id, user.role, user.name);
 

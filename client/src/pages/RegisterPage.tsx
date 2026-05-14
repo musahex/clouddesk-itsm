@@ -2,7 +2,6 @@ import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { UserRole } from '../types/auth';
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -11,7 +10,6 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('requester');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -21,7 +19,7 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      await register({ name, email, password, role });
+      await register({ name, email, password });
       navigate('/dashboard', { replace: true });
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.message) {
@@ -44,7 +42,11 @@ export default function RegisterPage() {
 
       {/* Form card */}
       <div className="w-full max-w-md bg-navy-800 border border-navy-700 rounded-xl p-8">
-        <h2 className="text-lg font-semibold text-white mb-6">Create an account</h2>
+        <h2 className="text-lg font-semibold text-white mb-1">Create an account</h2>
+        <p className="text-xs text-navy-500 mb-6">
+          Public accounts are registered as <span className="text-navy-400">Requester</span>.
+          Support staff accounts are set up by an administrator.
+        </p>
 
         {error && (
           <div className="mb-4 bg-red-900/20 border border-red-500/30 text-red-400 rounded-md px-4 py-3 text-sm">
@@ -96,21 +98,9 @@ export default function RegisterPage() {
               placeholder="••••••••"
               className="w-full bg-navy-900 border border-navy-700 rounded-md px-3 py-2 text-navy-300 placeholder-navy-600 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-colors"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-navy-400 mb-1.5">
-              Role
-            </label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as UserRole)}
-              className="w-full bg-navy-900 border border-navy-700 rounded-md px-3 py-2 text-navy-300 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-colors"
-            >
-              <option value="requester">Requester</option>
-              <option value="support_agent">Support Agent</option>
-              <option value="admin">Admin</option>
-            </select>
+            <p className="text-xs text-navy-600 mt-1.5">
+              Min 8 characters · uppercase · lowercase · number
+            </p>
           </div>
 
           <button

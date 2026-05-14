@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
@@ -11,6 +12,7 @@ import KnowledgeBasePage from './pages/KnowledgeBasePage';
 import KnowledgeArticlePage from './pages/KnowledgeArticlePage';
 import CreateKnowledgeArticlePage from './pages/CreateKnowledgeArticlePage';
 import EditKnowledgeArticlePage from './pages/EditKnowledgeArticlePage';
+import CreateSupportAgentPage from './pages/CreateSupportAgentPage';
 
 // Redirects already-authenticated users away from public pages
 function PublicRoute({ children }: { children: React.ReactNode }) {
@@ -102,6 +104,14 @@ function AppRoutes() {
           <ProtectedRoute>
             <EditKnowledgeArticlePage />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/support-agents/new"
+        element={
+          <AdminRoute>
+            <CreateSupportAgentPage />
+          </AdminRoute>
         }
       />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

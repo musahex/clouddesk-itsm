@@ -104,6 +104,7 @@ Stage 1 is a fully functional local MVP. This document outlines the planned prog
 
 ### Advanced User Management
 
+- Admin UI for creating support agent and admin accounts (production agents are currently provisioned via the `create-admin` CLI; a frontend form will replace this for agent accounts)
 - Admin UI for user listing, role changes
 - Account deactivation (soft delete)
 - Bulk ticket reassignment when an agent is deactivated

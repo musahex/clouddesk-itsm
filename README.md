@@ -88,7 +88,7 @@ See [docs/architecture.md](docs/architecture.md) for the full architecture docum
 |---|---|
 | `requester` | Register, login, create tickets, view own tickets, comment on own tickets, read published KB articles |
 | `support_agent` | View all tickets, update status, assign tickets, add internal notes, create/edit KB articles |
-| `admin` | All agent permissions + delete KB articles |
+| `admin` | All agent permissions + delete KB articles + create support agent accounts |
 
 ---
 
@@ -96,11 +96,19 @@ See [docs/architecture.md](docs/architecture.md) for the full architecture docum
 
 > These credentials are for local portfolio demonstration only. Do not use in production.
 
+**Seeded via `npm run seed` (`server/`):**
+
 | Role | Email | Password |
 |---|---|---|
 | Requester | requester@clouddesk.dev | Password123! |
 | Support Agent | agent@clouddesk.dev | Password123! |
 | Admin | admin@clouddesk.dev | Password123! |
+
+**Auto-created at server startup (dev only, `NODE_ENV !== production`):**
+
+| Role | Email | Password | Note |
+|---|---|---|---|
+| Admin | admin@clouddesk.com | admin | Weak password — local convenience only |
 
 ---
 
@@ -179,9 +187,55 @@ Then open `http://localhost:5173` and log in with any demo credential.
 |---|---|---|
 | `PORT` | No | API server port (default: 5001) |
 | `MONGO_URI` | Yes | MongoDB connection string |
-| `JWT_SECRET` | Yes | Secret used to sign JWT tokens — keep this strong and private |
+| `JWT_SECRET` | **Required** | Signs JWT tokens — server will not start without this |
+| `CLIENT_URL` | No | Deployed frontend URL — added to CORS allowlist in production |
+| `NODE_ENV` | No | Set to `production` in deployed environments |
 
 See `server/.env.example` for the template.
+
+---
+
+## Security
+
+- **Public registration is locked to `requester` role.** Any `role` field sent in the request body is ignored server-side.
+- **Password requirements:** minimum 8 characters, at least one uppercase letter, one lowercase letter, and one number. Enforced server-side on registration.
+- **JWT_SECRET is required at startup.** The server refuses to start if it is missing.
+- **Helmet** sets security headers on all responses.
+- **Rate limiting:** 200 requests / 15 min per IP globally; stricter 20 requests / 15 min on auth endpoints.
+- **CORS:** `localhost:5173` always allowed in development. Set `CLIENT_URL` in production to restrict origins.
+
+### Admin Account Strategy
+
+**Development (automatic on first startup):**
+
+The server auto-creates a default admin on startup when `NODE_ENV !== production`. This runs once — if `admin@clouddesk.com` already exists, it is skipped silently.
+
+```
+Email:    admin@clouddesk.com
+Password: admin
+```
+
+> This is a convenience account with a deliberately weak password. It is never created in production.
+
+**Production (explicit CLI):**
+
+Use the `create-admin` script from the `server/` directory. It requires three environment variables and validates the password before creating the account. Running it again with a different email creates a second admin — each email is independent.
+
+```bash
+# Create the first production admin
+ADMIN_NAME="Musa Admin" \
+ADMIN_EMAIL="admin1@yourdomain.com" \
+ADMIN_PASSWORD="StrongPassword123!" \
+npm run create-admin
+
+# Create a second admin later
+ADMIN_NAME="Operations Admin" \
+ADMIN_EMAIL="ops-admin@yourdomain.com" \
+ADMIN_PASSWORD="AnotherStrongPassword123!" \
+npm run create-admin
+```
+
+If `ADMIN_EMAIL` already exists in the database, the script exits with an error and makes no changes.
 
 ---
 
@@ -194,6 +248,7 @@ Base URL: `http://localhost:5001/api`
 | POST | `/auth/register` | Register new user | Public |
 | POST | `/auth/login` | Login, returns JWT | Public |
 | GET | `/users/assignees` | List agents and admins | Agent/Admin |
+| POST | `/users/support-agents` | Create support agent account | Admin |
 | GET | `/tickets` | List tickets (scoped by role) | Any |
 | POST | `/tickets` | Create a ticket | Any |
 | GET | `/tickets/:id` | Get ticket detail | Any |

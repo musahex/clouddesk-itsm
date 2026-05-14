@@ -49,6 +49,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {label}
             </NavLink>
           ))}
+
+          {user?.role === 'admin' && (
+            <>
+              <div className="pt-3 pb-1 px-3">
+                <p className="text-xs font-semibold text-navy-500 uppercase tracking-wider">
+                  Admin
+                </p>
+              </div>
+              <NavLink
+                to="/admin/support-agents/new"
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-teal-600/20 text-teal-400'
+                      : 'text-navy-300 hover:bg-navy-700 hover:text-white'
+                  }`
+                }
+              >
+                Create Support Agent
+              </NavLink>
+            </>
+          )}
         </nav>
 
         {/* User info + sign out */}

@@ -7,13 +7,16 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "seed": "ts-node-dev --transpile-only src/scripts/seed.ts"
+    "seed": "ts-node-dev --transpile-only src/scripts/seed.ts",
+    "create-admin": "ts-node-dev --transpile-only src/scripts/createAdmin.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.5.2",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.1"
   },

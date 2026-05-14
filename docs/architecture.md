@@ -10,12 +10,12 @@ CloudDesk is a full-stack ITSM platform built as a monorepo with a clear separat
 │           Vite dev server :5173         │
 │                                         │
 │  AuthContext → ProtectedRoute → Pages   │
-│  Axios /api/* (proxied to :5000)        │
+│  Axios /api/* (proxied to :5001)        │
 └──────────────────┬──────────────────────┘
                    │ HTTP/JSON
                    ▼
 ┌─────────────────────────────────────────┐
-│         Express REST API :5000          │
+│         Express REST API :5001          │
 │                                         │
 │  authMiddleware → requireRole()         │
 │  routes → controllers → Mongoose       │

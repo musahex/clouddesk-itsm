@@ -52,7 +52,7 @@ The goal was to build something that an Australian IT hiring manager could look 
 | Database | MongoDB, Mongoose 8 |
 | Auth | JWT (jsonwebtoken), bcryptjs |
 | HTTP Client | Axios |
-| Dev Tools | ts-node-dev, ESLint |
+| Dev Tools | ts-node-dev |
 
 ---
 
@@ -66,7 +66,7 @@ The goal was to build something that an Australian IT hiring manager could look 
              │ /api/* (proxied in dev)
              ▼
 ┌─────────────────────────────┐
-│   Express REST API :5000    │
+│   Express REST API :5001    │
 │   authMiddleware → RBAC     │
 │   routes → controllers      │
 └────────────┬────────────────┘
@@ -114,7 +114,7 @@ See [docs/architecture.md](docs/architecture.md) for the full architecture docum
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/musahx/clouddesk-itsm.git
+git clone https://github.com/musahex/clouddesk-itsm.git
 cd clouddesk-itsm
 ```
 
@@ -129,7 +129,7 @@ cp .env.example .env
 Edit `server/.env`:
 
 ```
-PORT=5000
+PORT=5001
 MONGO_URI=mongodb://localhost:27017/clouddesk
 JWT_SECRET=your-secret-key-change-this
 ```
@@ -140,7 +140,7 @@ JWT_SECRET=your-secret-key-change-this
 npm run dev
 ```
 
-Server runs on `http://localhost:5000`.
+Server runs on `http://localhost:5001`.
 
 ### 4. Seed demo users
 
@@ -165,7 +165,7 @@ Client runs on `http://localhost:5173`. All `/api` requests proxy to the server 
 ### 6. Verify
 
 ```bash
-curl http://localhost:5000/api/health
+curl http://localhost:5001/api/health
 # → {"status":"ok","service":"CloudDesk API"}
 ```
 
@@ -177,7 +177,7 @@ Then open `http://localhost:5173` and log in with any demo credential.
 
 | Variable | Required | Description |
 |---|---|---|
-| `PORT` | No | API server port (default: 5000) |
+| `PORT` | No | API server port (default: 5001) |
 | `MONGO_URI` | Yes | MongoDB connection string |
 | `JWT_SECRET` | Yes | Secret used to sign JWT tokens — keep this strong and private |
 
@@ -187,7 +187,7 @@ See `server/.env.example` for the template.
 
 ## API Overview
 
-Base URL: `http://localhost:5000/api`
+Base URL: `http://localhost:5001/api`
 
 | Method | Endpoint | Description | Auth |
 |---|---|---|---|
@@ -265,6 +265,22 @@ Stage 1 deliberately excludes AWS deployment, Docker, CI/CD, S3, CloudWatch, and
 - **Stage 4** — ServiceNow workflow mapping, SLA rules, escalation matrix, email notifications
 
 See [docs/future-roadmap.md](docs/future-roadmap.md) for detail.
+
+---
+
+## Repository Metadata Suggestions
+
+Paste these into the GitHub repository **About** panel (gear icon on the repo homepage).
+
+**Description:**
+```
+ServiceNow-inspired ITSM support platform with ticketing, RBAC, knowledge base, dashboard metrics, and AWS-ready architecture.
+```
+
+**Topics:**
+```
+react typescript nodejs express mongodb mongoose itsm service-desk ticketing-system rbac aws-ready portfolio-project
+```
 
 ---
 

@@ -12,7 +12,8 @@ Confirm the build and local stack are working before touching any cloud infrastr
 - [ ] `cd client && npm run build` — Vite bundle builds without errors
 - [ ] `docker compose up --build` — API and MongoDB containers start successfully
 - [ ] `curl http://localhost:5001/api/health` returns `{"status":"ok","service":"CloudDesk API"}`
-- [ ] GitHub Actions CI is green on `main` (both `server` and `client` jobs pass)
+- [ ] GitHub Actions CI (`ci.yml`) is green on the latest PR (both `server` and `client` jobs pass)
+- [ ] GitHub Actions Deploy (`deploy.yml`) is configured — all nine secrets are set in repo Settings
 - [ ] README is up to date — local setup steps work as documented
 - [ ] Screenshots in `screenshots/` are current and match the live app
 
@@ -62,7 +63,20 @@ Confirm the build and local stack are working before touching any cloud infrastr
 
 ---
 
-## E. Smoke Tests After Deployment
+## E. CI/CD Deployment
+
+- [ ] All nine GitHub Actions secrets are set (see `docs/cicd-deployment.md` for the full list)
+- [ ] `EC2_SSH_KEY` contains the full private key — tested with a manual SSH connection first
+- [ ] `server/.env` exists on EC2 and contains `NODE_ENV=production`, valid `MONGO_URI`, strong `JWT_SECRET`, and `CLIENT_URL`
+- [ ] `git reset --hard` on EC2 does not overwrite `server/.env` (confirm `.env` is in `.gitignore`)
+- [ ] IAM user has least-privilege S3 and CloudFront permissions — no `AdministratorAccess`
+- [ ] A push to `main` triggers the deploy workflow and both `deploy-backend` and `deploy-frontend` jobs succeed
+- [ ] Backend health check passes after deploy: `curl http://localhost:5001/api/health` returns `{"status":"ok"}`
+- [ ] CloudFront invalidation completes and the updated React build is visible in the browser
+
+---
+
+## F. Smoke Tests After Deployment
 
 Run through each test immediately after deploying. Repeat after any update.
 
@@ -85,7 +99,7 @@ Run through each test immediately after deploying. Repeat after any update.
 
 ---
 
-## F. Rollback and Teardown
+## G. Rollback and Teardown
 
 ### Rollback (broken deployment)
 

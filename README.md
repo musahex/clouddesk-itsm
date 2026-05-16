@@ -342,9 +342,27 @@ See [docs/production-readiness-checklist.md](docs/production-readiness-checklist
 
 ---
 
+## CI/CD Deployment
+
+Two GitHub Actions workflows run on this repo:
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| `ci.yml` | Pull request to `main` | Validates server + client builds |
+| `deploy.yml` | Push to `main` | Validates, then deploys backend to EC2 and frontend to S3 + CloudFront |
+
+On every merge to `main`:
+1. Server and client builds are validated — deploy is blocked if either fails
+2. Backend: SSH to EC2, `git reset --hard`, rebuild Docker image, health check
+3. Frontend: build React client, `aws s3 sync`, CloudFront invalidation
+
+Nine GitHub secrets are required — see [docs/cicd-deployment.md](docs/cicd-deployment.md) for the full list, IAM permissions, and troubleshooting guide.
+
+---
+
 ## Quality Checks
 
-GitHub Actions validates both builds on every push and pull request to `main`.
+GitHub Actions validates both builds on pull requests to `main`. The deploy workflow reruns validation on merge.
 
 Run the same checks locally:
 
@@ -425,6 +443,7 @@ Stage 1 deliberately excludes AWS deployment, S3, CloudWatch, and ServiceNow int
 | [Architecture](docs/architecture.md) | System design, auth flow, RBAC, data models, folder structure |
 | [API Reference](docs/api.md) | Full endpoint documentation with request/response examples |
 | [Local Deployment](docs/local-deployment.md) | Docker Compose setup, troubleshooting, and common commands |
+| [CI/CD Deployment](docs/cicd-deployment.md) | GitHub Actions workflows, secrets, rollback steps, troubleshooting |
 | [AWS Deployment Runbook](docs/aws-deployment-runbook.md) | Step-by-step EC2 + S3 + CloudFront deployment guide |
 | [AWS Cost Control](docs/aws-cost-control.md) | Budget alerts, teardown checklist, cost risk notes |
 | [Production Readiness Checklist](docs/production-readiness-checklist.md) | Pre-deployment, security, smoke test, and teardown checklist |

@@ -44,14 +44,42 @@ jobs:
           chmod 600 /tmp/deploy_key
           ssh -o StrictHostKeyChecking=accept-new \
               -i /tmp/deploy_key \
-              "${EC2_USER}@${EC2_HOST}" \
-              "set -e && \
-               cd '${EC2_APP_DIR}' && \
-               git fetch origin main && \
-               git reset --hard origin/main && \
-               docker compose -f docker-compose.prod.yml up -d --build && \
-               docker image prune -f && \
-               curl -f http://localhost:5001/api/health"
+              "${EC2_USER}@${EC2_HOST}" << ENDSSH
+          set -e
+          cd '${EC2_APP_DIR}'
+          git fetch origin main
+          git reset --hard origin/main
+          docker compose -f docker-compose.prod.yml up -d --build
+          docker image prune -f
+          echo "Waiting for CloudDesk API health check..."
+          for i in \$(seq 1 30); do
+            if curl -fsS http://localhost:5001/api/health >/dev/null; then
+              echo "API health check passed"
+              break
+            fi
+            echo "API not ready yet... attempt \$i/30"
+            sleep 3
+            if [ "\$i" -eq 30 ]; then
+              echo "API failed health check after 30 attempts"
+              docker compose -f docker-compose.prod.yml logs api --tail=100
+              exit 1
+            fi
+          done
+          echo "Checking API readiness..."
+          for i in \$(seq 1 20); do
+            if curl -fsS http://localhost:5001/api/health/ready >/dev/null; then
+              echo "API readiness check passed"
+              exit 0
+            fi
+            echo "API readiness not confirmed yet... attempt \$i/20"
+            sleep 3
+            if [ "\$i" -eq 20 ]; then
+              echo "API failed readiness check after 20 attempts"
+              docker compose -f docker-compose.prod.yml logs api --tail=100
+              exit 1
+            fi
+          done
+          ENDSSH
           rm -f /tmp/deploy_key
 
   deploy-frontend:

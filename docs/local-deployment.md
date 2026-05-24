@@ -102,7 +102,13 @@ Verify the API is up:
 
 ```bash
 curl http://localhost:5001/api/health
-# → {"status":"ok","service":"CloudDesk API"}
+# → {"status":"ok","service":"CloudDesk API","environment":"development",...}
+
+curl http://localhost:5001/api/health/live
+# → {"status":"alive","service":"CloudDesk API",...}
+
+curl http://localhost:5001/api/health/ready
+# → {"status":"ready","database":"connected",...}
 ```
 
 ---
@@ -206,6 +212,29 @@ docker compose down -v
 | `docker compose exec api npm run seed` | Seed demo users |
 
 ---
+
+## Structured Logs
+
+The API emits JSON log lines (via `pino`). When running with Docker Compose, logs appear in the terminal output. To follow them:
+
+```bash
+docker compose logs -f api
+```
+
+Example log line:
+
+```json
+{"level":30,"time":1748080000000,"req":{"method":"GET","url":"/api/tickets"},"res":{"statusCode":200},"responseTime":34,"msg":"request completed"}
+```
+
+`Authorization` headers and `password` fields are redacted — they never appear in logs.
+
+For human-readable output locally (without Docker), install `pino-pretty` globally:
+
+```bash
+npm install -g pino-pretty
+cd server && npm run dev | pino-pretty
+```
 
 ## Troubleshooting
 

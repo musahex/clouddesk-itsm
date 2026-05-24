@@ -11,7 +11,9 @@ Confirm the build and local stack are working before touching any cloud infrastr
 - [ ] `cd server && npm run build` — TypeScript compiles without errors
 - [ ] `cd client && npm run build` — Vite bundle builds without errors
 - [ ] `docker compose up --build` — API and MongoDB containers start successfully
-- [ ] `curl http://localhost:5001/api/health` returns `{"status":"ok","service":"CloudDesk API"}`
+- [ ] `curl http://localhost:5001/api/health` returns `{"status":"ok",...}` with HTTP 200
+- [ ] `curl http://localhost:5001/api/health/live` returns `{"status":"alive",...}` with HTTP 200
+- [ ] `curl http://localhost:5001/api/health/ready` returns `{"status":"ready","database":"connected",...}` with HTTP 200
 - [ ] GitHub Actions CI (`ci.yml`) is green on the latest PR (both `server` and `client` jobs pass)
 - [ ] GitHub Actions Deploy (`deploy.yml`) is configured — all nine secrets are set in repo Settings
 - [ ] README is up to date — local setup steps work as documented
@@ -35,6 +37,8 @@ Confirm the build and local stack are working before touching any cloud infrastr
 - [ ] Helmet security headers are active on all responses
 - [ ] CORS allowlist is configured correctly — `CLIENT_URL` is the only external origin allowed
 - [ ] No `.env` files are committed to the repository
+- [ ] `SENTRY_DSN` is not committed to the repository — `SENTRY_ENABLED=false` is the default in `.env.example`
+- [ ] If Sentry is enabled in production: `SENTRY_ENABLED=true` and `SENTRY_DSN` are set only in `server/.env` on EC2
 
 ---
 
@@ -59,7 +63,7 @@ Confirm the build and local stack are working before touching any cloud infrastr
 - [ ] EC2 instance type decided (t3.micro recommended for initial deployment)
 - [ ] AWS region decided and consistent across all resources
 - [ ] All AWS resources will be tagged `Project=CloudDesk`
-- [ ] Teardown plan is understood — see Section F below and `docs/aws-cost-control.md`
+- [ ] Teardown plan is understood — see Section H below and `docs/aws-cost-control.md`
 
 ---
 
@@ -76,7 +80,17 @@ Confirm the build and local stack are working before touching any cloud infrastr
 
 ---
 
-## F. Smoke Tests After Deployment
+## F. Monitoring Readiness
+
+- [ ] `GET /api/health` returns 200 with `status: "ok"` after deploy
+- [ ] `GET /api/health/live` returns 200 with `status: "alive"`
+- [ ] `GET /api/health/ready` returns 200 with `database: "connected"` — confirms MongoDB connectivity
+- [ ] Logs are streaming in JSON format: `docker compose -f docker-compose.prod.yml logs -f api`
+- [ ] No `Authorization` header values or `password` fields appear in log output
+- [ ] `sentryEnabled` field in `/api/health` response reflects intended configuration
+- [ ] If Sentry is enabled: a test error is visible in the Sentry dashboard
+
+## G. Smoke Tests After Deployment
 
 Run through each test immediately after deploying. Repeat after any update.
 
@@ -99,7 +113,7 @@ Run through each test immediately after deploying. Repeat after any update.
 
 ---
 
-## G. Rollback and Teardown
+## H. Rollback and Teardown
 
 ### Rollback (broken deployment)
 

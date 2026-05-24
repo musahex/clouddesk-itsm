@@ -207,8 +207,17 @@ From your local machine:
 
 ```bash
 curl http://<EC2-PUBLIC-IP>:5001/api/health
-# → {"status":"ok","service":"CloudDesk API"}
+# → {"status":"ok","service":"CloudDesk API","environment":"production",...}
+
+curl http://<EC2-PUBLIC-IP>:5001/api/health/live
+# → {"status":"alive",...}
+
+curl http://<EC2-PUBLIC-IP>:5001/api/health/ready
+# → {"status":"ready","database":"connected",...}  (200 = MongoDB connected)
+# → {"status":"not_ready","database":"disconnected",...}  (503 = MongoDB not connected)
 ```
+
+The `/api/health/ready` endpoint is the most informative — a 200 response confirms the API process is running **and** MongoDB Atlas is reachable.
 
 ### Step 9 — Build and deploy the React client
 
@@ -255,7 +264,8 @@ After deployment, run through each item logged in as the appropriate user:
 
 | # | Test | User | Expected |
 |---|---|---|---|
-| 1 | `GET /api/health` | — | `{"status":"ok"}` |
+| 1 | `GET /api/health` | — | 200 with `"status":"ok"` |
+| 1b | `GET /api/health/ready` | — | 200 with `"database":"connected"` |
 | 2 | Login | admin | Redirected to dashboard |
 | 3 | Dashboard metrics | admin | Loads without error (zero counts acceptable) |
 | 4 | Create support agent | admin | Success banner, name/email/role shown |
@@ -267,6 +277,46 @@ After deployment, run through each item logged in as the appropriate user:
 | 10 | Publish KB article | agent | Article visible to requester |
 | 11 | KB search | requester | Published article returned in results |
 | 12 | Dashboard (requester) | requester | Scoped to own tickets only |
+
+---
+
+## Monitoring After Deployment
+
+### View live logs
+
+```bash
+# On EC2
+docker compose -f docker-compose.prod.yml logs -f api
+docker compose -f docker-compose.prod.yml logs api --tail=100
+```
+
+Logs are structured JSON. Each line includes the HTTP method, URL, status code, and response time. `Authorization` headers and passwords are redacted automatically.
+
+### Enable Sentry (optional)
+
+Add to `server/.env` on EC2:
+
+```env
+SENTRY_ENABLED=true
+SENTRY_DSN=https://your-dsn@sentry.io/123456
+SENTRY_ENVIRONMENT=production
+SENTRY_RELEASE=clouddesk-api@1.0.0
+```
+
+Restart the container:
+
+```bash
+docker compose -f docker-compose.prod.yml restart api
+```
+
+Verify:
+
+```bash
+curl http://localhost:5001/api/health
+# "sentryEnabled": true  confirms Sentry is active
+```
+
+See [docs/monitoring-runbook.md](monitoring-runbook.md) for full monitoring guidance and incident response.
 
 ---
 

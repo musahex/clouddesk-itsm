@@ -41,6 +41,20 @@ if (isProduction && !process.env.CLIENT_URL) {
 
 const clientUrl = process.env.CLIENT_URL ?? 'http://localhost:5173';
 
+// Sentry — optional, disabled by default
+const sentryEnabled = process.env.SENTRY_ENABLED === 'true';
+const sentryDsn = process.env.SENTRY_DSN || undefined;
+
+if (sentryEnabled && !sentryDsn) {
+  throw new Error(
+    'FATAL: SENTRY_ENABLED is true but SENTRY_DSN is not set.\n' +
+    '  Set SENTRY_DSN to your Sentry project DSN, or set SENTRY_ENABLED=false.'
+  );
+}
+
+const sentryEnvironment = process.env.SENTRY_ENVIRONMENT ?? nodeEnv;
+const sentryRelease = process.env.SENTRY_RELEASE ?? 'clouddesk-api@local';
+
 export const env = {
   port: portNum,
   mongoUri,
@@ -49,4 +63,8 @@ export const env = {
   clientUrl,
   isProduction,
   isDevelopment,
+  sentryEnabled,
+  sentryDsn,
+  sentryEnvironment,
+  sentryRelease,
 } as const;

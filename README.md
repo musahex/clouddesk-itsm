@@ -279,6 +279,10 @@ See [docs/aws-deployment-runbook.md](docs/aws-deployment-runbook.md) for the ful
 | `JWT_SECRET` | **Required** | Signs JWT tokens — server will not start without this |
 | `CLIENT_URL` | No | Deployed frontend URL — added to CORS allowlist in production |
 | `NODE_ENV` | No | Set to `production` in deployed environments |
+| `SENTRY_ENABLED` | No | Set to `true` to enable Sentry. Default: `false`. |
+| `SENTRY_DSN` | If Sentry enabled | Sentry project DSN. Never commit. |
+| `SENTRY_ENVIRONMENT` | No | Sentry environment tag. Defaults to `NODE_ENV`. |
+| `SENTRY_RELEASE` | No | Sentry release tag. Defaults to `clouddesk-api@local`. |
 
 See `server/.env.example` for the template.
 
@@ -292,6 +296,42 @@ See `server/.env.example` for the template.
 - **Helmet** sets security headers on all responses.
 - **Rate limiting:** 200 requests / 15 min per IP globally; stricter 20 requests / 15 min on auth endpoints.
 - **CORS:** `localhost:5173` always allowed in development. Set `CLIENT_URL` in production to restrict origins.
+
+---
+
+## Monitoring
+
+### Health endpoints
+
+| Endpoint | Status code | Description |
+|---|---|---|
+| `GET /api/health` | 200 always | Service info, uptime, environment, Sentry status |
+| `GET /api/health/live` | 200 always | Liveness — confirms process is running |
+| `GET /api/health/ready` | 200 / 503 | Readiness — confirms MongoDB is connected |
+
+```bash
+curl http://localhost:5001/api/health
+curl http://localhost:5001/api/health/live
+curl http://localhost:5001/api/health/ready
+```
+
+The `/api/health` endpoint is used as the deploy gate in the GitHub Actions deployment workflow.
+
+### Structured logging
+
+The API uses `pino` and `pino-http` for structured JSON request logging. On EC2, logs are available via Docker Compose:
+
+```bash
+docker compose -f docker-compose.prod.yml logs -f api
+```
+
+`Authorization` headers and `password` fields are redacted from all log output.
+
+### Sentry (optional)
+
+Backend error tracking via `@sentry/node` is optional and disabled by default. Set `SENTRY_ENABLED=true` and `SENTRY_DSN=<your-dsn>` to enable. Never commit a real DSN to the repository.
+
+See [docs/monitoring-runbook.md](docs/monitoring-runbook.md) for full setup, log commands, and incident response guidance.
 
 ### Admin Account Strategy
 
@@ -447,6 +487,7 @@ Stage 1 deliberately excludes AWS deployment, S3, CloudWatch, and ServiceNow int
 | [AWS Deployment Runbook](docs/aws-deployment-runbook.md) | Step-by-step EC2 + S3 + CloudFront deployment guide |
 | [AWS Cost Control](docs/aws-cost-control.md) | Budget alerts, teardown checklist, cost risk notes |
 | [Production Readiness Checklist](docs/production-readiness-checklist.md) | Pre-deployment, security, smoke test, and teardown checklist |
+| [Monitoring Runbook](docs/monitoring-runbook.md) | Health checks, structured logging, Sentry setup, incident response |
 | [Stage 1 Case Study](docs/stage-1-case-study.md) | Project write-up for portfolio review |
 | [Future Roadmap](docs/future-roadmap.md) | Stage 2–4 plans including AWS, monitoring, and ServiceNow mapping |
 

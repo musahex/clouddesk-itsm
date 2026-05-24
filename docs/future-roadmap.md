@@ -65,11 +65,32 @@ Before AWS deployment, two foundational pieces were added:
 
 **Goal:** Add operational visibility and file attachment support — features expected in a production support platform.
 
-### Observability
+### Observability (Phase 6 — In Progress)
 
-- **CloudWatch Logs** — Structured API request/error logging via a logging middleware (Winston or Pino)
+Phase 6 is delivering the monitoring foundation in three tasks:
+
+- **Phase 6.1 — Backend monitoring foundation** ✅ Complete
+  - `pino` + `pino-http` structured JSON request logging (Authorization and password fields redacted)
+  - Optional `@sentry/node` error tracking (`SENTRY_ENABLED=false` by default, DSN never committed)
+  - Enriched health endpoints: `GET /api/health`, `GET /api/health/live`, `GET /api/health/ready` (MongoDB readiness check)
+  - Global JSON error handler — no HTML error pages in production
+  - Graceful shutdown on SIGTERM/SIGINT
+  - `docs/monitoring-runbook.md` with health commands, log format, and incident response
+
+- **Phase 6.2 — Frontend Sentry monitoring** (Planned)
+  - `@sentry/react` in `client/`
+  - ErrorBoundary wrapping the app
+  - Axios interceptor capturing 5xx errors
+
+- **Phase 6.3 — Admin System Health page** (Planned)
+  - Admin-only `/admin/health` API endpoint
+  - Frontend System Health page at `/admin/health`
+  - Cards: API status, MongoDB status, Sentry enabled/disabled, uptime, environment, timestamp
+
+Remaining Stage 3 observability work:
+
+- **CloudWatch Logs** — Ship Docker container logs to CloudWatch Logs for persistence beyond the EC2 instance
 - **CloudWatch Metrics** — Custom metrics for ticket creation rate, open ticket count, API error rate
-- **Health check endpoint** — `/api/health` already exists; extend to report MongoDB connection status
 - **SLA alerting** — CloudWatch Alarm when unresolved Critical tickets exceed a configurable threshold
 - **Dashboard enhancements** — Average resolution time, SLA compliance rate
 

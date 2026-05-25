@@ -323,27 +323,41 @@ docker compose -f docker-compose.prod.yml ps
 
 ---
 
-## 13. System Health page shows degraded status
+## 13. System Health page shows degraded or unhealthy status
 
-**Symptoms:** The `/admin/system-health` page shows the API status badge as "DEGRADED" (amber).
+**Symptoms:** The `/admin/system-health` page shows the Overall Health banner as "Degraded" (amber) or "Unhealthy" (red).
 
-**Likely cause:**
-- MongoDB is disconnected — DB queries failed during the health response
-- The `application` section shows zeroes
+**Degraded** — API is reachable but something is wrong:
+- Database status card shows "Disconnected"
+- 5xx Server Err count is > 0
+- API status field is `"degraded"`
 
-**Checks:**
+**Unhealthy** — API health endpoint could not be reached at all (banner shows without data sections).
+
+**Checks for Degraded:**
 ```bash
-# From the System Health page: check Database status card
-# If "Disconnected", follow Incident #2 (health/ready returns 503)
-
-# From EC2
+# From the System Health page: check Database status card and 5xx count
+# Or from EC2 directly:
 curl http://localhost:5001/api/health/ready
-# → {"status":"not_ready","database":"disconnected"}
+# → {"status":"not_ready","database":"disconnected"} means MongoDB issue
+
+# Check for 5xx errors in recent events (System Health > Recent Application Events)
+# Or in Docker logs:
+docker compose -f docker-compose.prod.yml logs api --tail=50 | grep '"level":50'
 ```
 
-**Fix:** Resolve the MongoDB connectivity issue — see Incident #2 and #3. Once MongoDB reconnects, the health page will return to "OK" on next refresh.
+**Checks for Unhealthy:**
+```bash
+# Can the health endpoint be reached at all?
+curl http://localhost:5001/api/health
+```
 
-**Prevention:** Use a managed Atlas cluster (M10+) with automated backups and alerts to reduce unplanned downtime.
+**Fix:**
+- DB disconnected → see Incident #2 and #3
+- Repeated 5xx → see Incident #14
+- Unhealthy → EC2/Docker issue, see Incident #1 and #4
+
+**Prevention:** Use a managed Atlas cluster (M10+). Check the Overall Health banner and 5xx count after every deployment.
 
 ---
 

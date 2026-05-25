@@ -504,13 +504,14 @@ Both endpoints require a valid JWT `Authorization: Bearer <token>` header and re
 
 ### What the page shows
 
-- **Status cards** — API status (ok/degraded), database connectivity, Sentry status, environment
-- **Runtime** — uptime, memory usage, Node.js version, process ID
-- **Application data** — user count, ticket counts, KB article counts (queried from MongoDB)
-- **Request metrics** — total requests, status code groups, error rate, response times (all since last restart)
-- **Method breakdown** — counts per HTTP method
-- **Route metrics table** — top routes by call count with average response time and error count
-- **Recent Application Events** — collapsible panel showing the last 50 sanitized request events
+- **Overall Health banner** — Healthy / Degraded / Unhealthy summary with operational message and last-checked time. Healthy = API ok + DB connected + zero 5xx. Degraded = any 5xx, disconnected DB, or degraded API status. Unhealthy = health API failed to load.
+- **Status cards** — API status, database connectivity (Connected/Disconnected), Error Tracking (Sentry Enabled/Disabled with amber badge when off), environment badge (teal for production, amber for development)
+- **Runtime** — uptime, memory usage (heap used / total / RSS), Node.js version, process ID
+- **Application data** — user count, open/resolved/critical ticket counts (critical highlighted red when non-zero), KB article counts
+- **Request metrics** — total requests, status code groups (2xx/3xx/4xx/5xx), error rate (teal at 0%, amber ≤2%, red >2%), average and slowest response time
+- **Method breakdown** — request counts per HTTP method
+- **Route metrics table** — top routes sorted by call count, with average response time, last status code, error count (red when >0), and last-called time
+- **Recent Application Events** — collapsible panel (toggle button) showing the last 50 sanitized request events, newest first. Labelled clearly as sanitized events, not raw logs.
 
 ### In-memory metrics
 

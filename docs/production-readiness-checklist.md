@@ -106,11 +106,15 @@ Confirm the build and local stack are working before touching any cloud infrastr
 ### System Health dashboard (Phase 6.3)
 
 - [ ] `/admin/system-health` page loads without error when logged in as admin
+- [ ] Overall Health banner shows "Healthy" (green) when API and DB are both ok with zero 5xx errors
+- [ ] Overall Health banner shows "Degraded" (amber) when there are 5xx errors or DB is disconnected
+- [ ] Overall Health banner shows "Unhealthy" (red) when the health API fails to load entirely
 - [ ] Non-admin users (requester, support_agent) are redirected away from `/admin/system-health`
 - [ ] `GET /api/system/health` returns HTTP 200 with `status: "ok"` and `database.status: "connected"` after deploy
 - [ ] `GET /api/system/events?limit=50` returns events array with sanitized fields only
 - [ ] `GET /api/system/health` returns HTTP 403 when called with a requester or support_agent token
-- [ ] Route metrics table on the health page shows entries after initial traffic (send a few test requests)
+- [ ] Route metrics table shows entries after sending a few test requests
+- [ ] Recent Application Events toggle shows events when expanded; "Refresh Events" button works
 - [ ] In-memory metrics reset on server restart is confirmed — restart container and verify counts return to zero
 - [ ] No MongoDB URI, JWT secret, Sentry DSN, request headers, or stack traces are visible in any API response
 

@@ -410,10 +410,10 @@ Two GitHub Actions workflows run on this repo:
 
 On every merge to `main`:
 1. Server and client builds are validated — deploy is blocked if either fails
-2. Backend: SSH to EC2, `git reset --hard`, rebuild Docker image, health check
-3. Frontend: build React client, `aws s3 sync`, CloudFront invalidation
+2. Backend: SSH to EC2, `git reset --hard`, upsert Sentry env vars into `server/.env`, rebuild Docker image, health + readiness check
+3. Frontend: inject `VITE_SENTRY_*` build-time vars, build React client, `aws s3 sync`, CloudFront invalidation
 
-Nine GitHub secrets are required — see [docs/cicd-deployment.md](docs/cicd-deployment.md) for the full list, IAM permissions, and troubleshooting guide.
+Eleven GitHub secrets are required — see [docs/cicd-deployment.md](docs/cicd-deployment.md) for the full list, IAM permissions, and troubleshooting guide.
 
 ---
 

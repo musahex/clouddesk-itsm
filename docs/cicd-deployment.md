@@ -53,6 +53,7 @@ Configure all of the following in **GitHub → Settings → Secrets and variable
 | `EC2_USER` | SSH username for EC2 | `ec2-user` |
 | `EC2_SSH_KEY` | Full contents of the EC2 private key `.pem` file | `-----BEGIN RSA PRIVATE KEY-----\n...` |
 | `EC2_APP_DIR` | Absolute path to the repo on EC2 | `/home/ec2-user/clouddesk-itsm` |
+| `SENTRY_API_DSN` | Sentry DSN for the `clouddesk-api` backend project | `https://abc123@o0.ingest.sentry.io/123` |
 
 ### Frontend deployment secrets
 
@@ -63,6 +64,7 @@ Configure all of the following in **GitHub → Settings → Secrets and variable
 | `AWS_REGION` | AWS region of the S3 bucket | `ap-southeast-2` |
 | `S3_BUCKET` | S3 bucket name (no `s3://` prefix) | `clouddesk-client-prod` |
 | `CLOUDFRONT_DISTRIBUTION_ID` | CloudFront distribution ID | `E1ABCD2EFGH3IJ` |
+| `SENTRY_WEB_DSN` | Sentry DSN for the `clouddesk-web` frontend project | `https://def456@o0.ingest.sentry.io/456` |
 
 ### IAM permissions required for the AWS credentials
 
@@ -100,23 +102,28 @@ The IAM user behind `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` needs:
 ### Backend deployment flow
 
 1. The runner writes the EC2 private key to `/tmp/deploy_key` and sets permissions `600`
-2. SSH connects to `EC2_HOST` using `EC2_USER` and the private key
-3. On EC2, inside `EC2_APP_DIR`:
+2. The job fails immediately if `SENTRY_API_DSN` is not set — Sentry cannot be configured without it
+3. SSH connects to `EC2_HOST` using `EC2_USER` and the private key
+4. On EC2, inside `EC2_APP_DIR`:
    - `git fetch origin main` — fetches the latest commit
    - `git reset --hard origin/main` — overwrites local files with the latest (never touches `server/.env`)
+   - A Python script upserts four Sentry keys into `server/.env`: `SENTRY_ENABLED=true`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT=production`, `SENTRY_RELEASE=clouddesk-api@<sha>`. All other keys (e.g. `MONGO_URI`, `JWT_SECRET`, `CLIENT_URL`) are preserved. The DSN value is passed via environment variable — it is never echoed to the workflow log.
    - `docker compose -f docker-compose.prod.yml up -d --build` — rebuilds the image and restarts the container
    - `docker image prune -f` — removes dangling images to keep disk usage low
-   - `curl -f http://localhost:5001/api/health` — verifies the API started correctly; fails the job if it returns a non-2xx status
-4. The private key is deleted from the runner
+   - Health check: polls `http://localhost:5001/api/health` every 3 s for up to 30 attempts; dumps container logs and fails the job if the limit is reached
+   - Readiness check: polls `http://localhost:5001/api/health/ready` every 3 s for up to 20 attempts; confirms MongoDB is connected
+5. The private key is deleted from the runner
 
-**The production `server/.env` on EC2 is never overwritten.** `git reset --hard` only affects tracked files — `.env` is in `.gitignore` and is not a tracked file.
+**The production `server/.env` on EC2 is never overwritten.** `git reset --hard` only affects tracked files — `.env` is in `.gitignore` and is not a tracked file. The Python upsert preserves all existing keys and only adds or updates the four Sentry-related keys.
 
 ### Frontend deployment flow
 
-1. The runner checks out the repo and runs `npm ci && npm run build` in `client/`
-2. AWS credentials are configured from secrets using `aws-actions/configure-aws-credentials@v4`
-3. `aws s3 sync client/dist s3://<S3_BUCKET> --delete` — uploads the new build and removes stale files
-4. `aws cloudfront create-invalidation --paths "/*"` — clears the CDN cache so users immediately get the new build
+1. The runner checks out the repo
+2. The build step injects four Sentry build-time variables: `VITE_SENTRY_ENABLED=true`, `VITE_SENTRY_DSN` (from `SENTRY_WEB_DSN` secret), `VITE_SENTRY_ENVIRONMENT=production`, `VITE_SENTRY_RELEASE=clouddesk-web@<sha>`. The job fails immediately if `SENTRY_WEB_DSN` is not set.
+3. `npm ci && npm run build` runs in `client/` — the Vite build bakes the Sentry variables into the static bundle
+4. AWS credentials are configured from secrets using `aws-actions/configure-aws-credentials@v4`
+5. `aws s3 sync client/dist s3://<S3_BUCKET> --delete` — uploads the new build and removes stale files
+6. `aws cloudfront create-invalidation --paths "/*"` — clears the CDN cache so users immediately get the new build
 
 ---
 
@@ -176,7 +183,7 @@ ssh -i your-key.pem ec2-user@<EC2_HOST>
 
 ### EC2 health check failed
 
-The `curl -f http://localhost:5001/api/health` step failed. Diagnose:
+The health or readiness check polling loop timed out. Diagnose:
 
 ```bash
 # SSH into EC2
@@ -206,6 +213,6 @@ Common causes:
 If a secret is not set, the step that references it will either silently use an empty string (for non-critical values) or fail with an authentication error. Check:
 
 - **GitHub → repo → Settings → Secrets and variables → Actions**
-- Confirm all nine secrets listed above are present
+- Confirm all eleven secrets listed above are present
 - Secret names are case-sensitive — `EC2_HOST` is not the same as `ec2_host`
 - After adding or updating a secret, re-run the workflow from the Actions tab

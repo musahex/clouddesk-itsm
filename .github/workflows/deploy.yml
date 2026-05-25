@@ -37,21 +37,87 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
+          SENTRY_API_DSN: ${{ secrets.SENTRY_API_DSN }}
+          DEPLOY_SHA: ${{ github.sha }}
         run: |
+          if [ -z "$SENTRY_API_DSN" ]; then
+            echo "Error: SENTRY_API_DSN secret is not set — backend Sentry cannot be configured"
+            exit 1
+          fi
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           echo "$SSH_KEY" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
           ssh -o StrictHostKeyChecking=accept-new \
               -i /tmp/deploy_key \
-              "${EC2_USER}@${EC2_HOST}" \
-              "set -e && \
-               cd '${EC2_APP_DIR}' && \
-               git fetch origin main && \
-               git reset --hard origin/main && \
-               docker compose -f docker-compose.prod.yml up -d --build && \
-               docker image prune -f && \
-               curl -f http://localhost:5001/api/health"
+              "${EC2_USER}@${EC2_HOST}" << ENDSSH
+          set -e
+          cd '${EC2_APP_DIR}'
+          git fetch origin main
+          git reset --hard origin/main
+          export SENTRY_DSN_NEW='${SENTRY_API_DSN}'
+          export SENTRY_RELEASE_NEW='clouddesk-api@${DEPLOY_SHA}'
+          python3 - << 'PYEOF'
+          import os, re
+          env_path = 'server/.env'
+          updates = {
+              'SENTRY_ENABLED': 'true',
+              'SENTRY_DSN': os.environ['SENTRY_DSN_NEW'],
+              'SENTRY_ENVIRONMENT': 'production',
+              'SENTRY_RELEASE': os.environ['SENTRY_RELEASE_NEW'],
+          }
+          try:
+              with open(env_path) as f:
+                  content = f.read()
+          except FileNotFoundError:
+              content = ''
+          seen = set()
+          new_lines = []
+          for line in content.splitlines(keepends=True):
+              m = re.match(r'^([A-Z_][A-Z0-9_]*)=', line)
+              if m and m.group(1) in updates:
+                  new_lines.append(m.group(1) + '=' + updates[m.group(1)] + '\n')
+                  seen.add(m.group(1))
+              else:
+                  new_lines.append(line)
+          for k, v in updates.items():
+              if k not in seen:
+                  new_lines.append(k + '=' + v + '\n')
+          with open(env_path, 'w') as f:
+              f.writelines(new_lines)
+          print('Updated backend Sentry environment keys')
+          PYEOF
+          docker compose -f docker-compose.prod.yml up -d --build
+          docker image prune -f
+          echo "Waiting for CloudDesk API health check..."
+          for i in \$(seq 1 30); do
+            if curl -fsS http://localhost:5001/api/health >/dev/null; then
+              echo "API health check passed"
+              break
+            fi
+            echo "API not ready yet... attempt \$i/30"
+            sleep 3
+            if [ "\$i" -eq 30 ]; then
+              echo "API failed health check after 30 attempts"
+              docker compose -f docker-compose.prod.yml logs api --tail=100
+              exit 1
+            fi
+          done
+          echo "Checking API readiness..."
+          for i in \$(seq 1 20); do
+            if curl -fsS http://localhost:5001/api/health/ready >/dev/null; then
+              echo "API readiness check passed"
+              exit 0
+            fi
+            echo "API readiness not confirmed yet... attempt \$i/20"
+            sleep 3
+            if [ "\$i" -eq 20 ]; then
+              echo "API failed readiness check after 20 attempts"
+              docker compose -f docker-compose.prod.yml logs api --tail=100
+              exit 1
+            fi
+          done
+          ENDSSH
           rm -f /tmp/deploy_key
 
   deploy-frontend:
@@ -68,7 +134,17 @@ jobs:
 
       - name: Build client
         working-directory: client
-        run: npm ci && npm run build
+        env:
+          VITE_SENTRY_ENABLED: "true"
+          VITE_SENTRY_DSN: ${{ secrets.SENTRY_WEB_DSN }}
+          VITE_SENTRY_ENVIRONMENT: "production"
+          VITE_SENTRY_RELEASE: clouddesk-web@${{ github.sha }}
+        run: |
+          if [ -z "$VITE_SENTRY_DSN" ]; then
+            echo "Error: SENTRY_WEB_DSN secret is not set — frontend Sentry cannot be configured"
+            exit 1
+          fi
+          npm ci && npm run build
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

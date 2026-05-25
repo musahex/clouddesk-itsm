@@ -50,7 +50,18 @@ cd server && npm run dev
 
 ### Enable Sentry on EC2
 
-SSH into the EC2 instance and edit `server/.env`:
+**Via CI/CD (recommended):** The `deploy-backend` job in `.github/workflows/deploy.yml` upserts four Sentry keys into `server/.env` automatically on every push to `main`. Set the `SENTRY_API_DSN` GitHub Actions secret and the workflow handles the rest — no manual SSH required.
+
+| What the workflow sets | Value |
+|---|---|
+| `SENTRY_ENABLED` | `true` |
+| `SENTRY_DSN` | Value of the `SENTRY_API_DSN` GitHub secret |
+| `SENTRY_ENVIRONMENT` | `production` |
+| `SENTRY_RELEASE` | `clouddesk-api@<git-sha>` |
+
+All other keys in `server/.env` (`MONGO_URI`, `JWT_SECRET`, `CLIENT_URL`, etc.) are preserved.
+
+**Manually (fallback):** SSH into the EC2 instance and edit `server/.env`:
 
 ```bash
 ssh -i your-key.pem ec2-user@<EC2-PUBLIC-IP>
@@ -122,20 +133,22 @@ cd client && npm run dev
 
 Because Vite env vars are baked in at build time, set them in the GitHub Actions workflow environment or as repository secrets before `npm run build` runs.
 
-Add to the `deploy-frontend` step in `.github/workflows/deploy.yml`:
+The `deploy-frontend` job in `.github/workflows/deploy.yml` injects all four variables at build time automatically. The relevant build step looks like:
 
 ```yaml
 - name: Build client
   working-directory: client
   env:
     VITE_SENTRY_ENABLED: "true"
-    VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
-    VITE_SENTRY_ENVIRONMENT: production
+    VITE_SENTRY_DSN: ${{ secrets.SENTRY_WEB_DSN }}
+    VITE_SENTRY_ENVIRONMENT: "production"
     VITE_SENTRY_RELEASE: clouddesk-web@${{ github.sha }}
-  run: npm ci && npm run build
+  run: |
+    # fails fast if SENTRY_WEB_DSN secret is not set
+    npm ci && npm run build
 ```
 
-Add `VITE_SENTRY_DSN` as a GitHub Actions secret (do not hardcode it).
+Add `SENTRY_WEB_DSN` as a GitHub Actions secret (do not hardcode it). The DSN is baked into the static bundle at build time and is not a runtime secret.
 
 ### What the frontend captures
 

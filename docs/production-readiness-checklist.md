@@ -69,14 +69,17 @@ Confirm the build and local stack are working before touching any cloud infrastr
 
 ## E. CI/CD Deployment
 
-- [ ] All nine GitHub Actions secrets are set (see `docs/cicd-deployment.md` for the full list)
+- [ ] All eleven GitHub Actions secrets are set (see `docs/cicd-deployment.md` for the full list)
 - [ ] `EC2_SSH_KEY` contains the full private key — tested with a manual SSH connection first
+- [ ] `SENTRY_API_DSN` is set — deploy-backend will fail fast if this secret is missing
+- [ ] `SENTRY_WEB_DSN` is set — deploy-frontend build will fail fast if this secret is missing
 - [ ] `server/.env` exists on EC2 and contains `NODE_ENV=production`, valid `MONGO_URI`, strong `JWT_SECRET`, and `CLIENT_URL`
 - [ ] `git reset --hard` on EC2 does not overwrite `server/.env` (confirm `.env` is in `.gitignore`)
 - [ ] IAM user has least-privilege S3 and CloudFront permissions — no `AdministratorAccess`
 - [ ] A push to `main` triggers the deploy workflow and both `deploy-backend` and `deploy-frontend` jobs succeed
-- [ ] Backend health check passes after deploy: `curl http://localhost:5001/api/health` returns `{"status":"ok"}`
+- [ ] Backend health check passes after deploy: `curl http://localhost:5001/api/health` returns `{"status":"ok","sentryEnabled":true,...}`
 - [ ] CloudFront invalidation completes and the updated React build is visible in the browser
+- [ ] Frontend Sentry is confirmed active from the deployed CloudFront URL (not localhost)
 
 ---
 

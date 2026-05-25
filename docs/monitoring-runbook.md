@@ -1,19 +1,19 @@
 # CloudDesk — Monitoring Runbook
 
-This runbook covers backend observability for CloudDesk: health checks, structured logging, optional Sentry error tracking, and how to diagnose common incidents.
+This runbook covers observability for CloudDesk: health checks, structured logging, backend and frontend Sentry error tracking, and how to diagnose common incidents.
 
 ---
 
 ## Purpose
 
-CloudDesk uses three layers of monitoring:
+CloudDesk uses these monitoring layers:
 
 | Layer | Tool | Status |
 |---|---|---|
 | Structured request logging | pino + pino-http | Active (Phase 6.1) |
 | Health / liveness / readiness | Express health routes | Active (Phase 6.1) |
 | Backend error tracking | Sentry (`@sentry/node`) | Optional — disabled by default |
-| Frontend error tracking | Sentry (`@sentry/react`) | Planned (Phase 6.2) |
+| Frontend error tracking | Sentry (`@sentry/react`) | Active (Phase 6.2) — optional |
 | Admin health dashboard | System Health page | Planned (Phase 6.3) |
 | CloudWatch log shipping | CloudWatch Logs agent | Planned (Stage 3) |
 
@@ -82,6 +82,94 @@ The `/api/health` endpoint reports `sentryEnabled: true` when active:
 curl http://localhost:5001/api/health
 # → { ..., "sentryEnabled": true, ... }
 ```
+
+---
+
+## Sentry Frontend Setup
+
+Frontend error tracking via `@sentry/react` is **optional** and disabled by default. The app works fully without it.
+
+**Suggested Sentry project name:** `clouddesk-web`
+
+### Required environment variables (when enabling)
+
+These are Vite build-time variables — they are baked into the static JS bundle at build time, not at runtime.
+
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_SENTRY_ENABLED` | No | Set to `true` to enable. Default: `false`. |
+| `VITE_SENTRY_DSN` | If enabled | Sentry DSN for `clouddesk-web` project. Never commit. |
+| `VITE_SENTRY_ENVIRONMENT` | No | Defaults to Vite's `MODE` (e.g. `production`). |
+| `VITE_SENTRY_RELEASE` | No | Defaults to `clouddesk-web@local`. Set per release in production. |
+
+### Enable Sentry locally
+
+```bash
+# In client/.env — do not commit
+VITE_SENTRY_ENABLED=true
+VITE_SENTRY_DSN=https://your-dsn@sentry.io/your-project-id
+VITE_SENTRY_ENVIRONMENT=development
+VITE_SENTRY_RELEASE=clouddesk-web@dev
+```
+
+Then start the dev server:
+
+```bash
+cd client && npm run dev
+```
+
+### Enable Sentry in production frontend builds
+
+Because Vite env vars are baked in at build time, set them in the GitHub Actions workflow environment or as repository secrets before `npm run build` runs.
+
+Add to the `deploy-frontend` step in `.github/workflows/deploy.yml`:
+
+```yaml
+- name: Build client
+  working-directory: client
+  env:
+    VITE_SENTRY_ENABLED: "true"
+    VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+    VITE_SENTRY_ENVIRONMENT: production
+    VITE_SENTRY_RELEASE: clouddesk-web@${{ github.sha }}
+  run: npm ci && npm run build
+```
+
+Add `VITE_SENTRY_DSN` as a GitHub Actions secret (do not hardcode it).
+
+### What the frontend captures
+
+**Captured:**
+- Unhandled React render errors via `Sentry.ErrorBoundary` (wraps the whole app)
+- 5xx server errors from any API call
+- Network errors (request sent, no response received)
+
+**Not captured:**
+- 400 Bad Request — user input errors, expected
+- 401 Unauthorized — expected auth flow
+- 403 Forbidden — expected RBAC behaviour
+- `Authorization` headers or JWT tokens
+- Request body content (passwords, form data)
+- Session replay or user behaviour recording
+
+Each captured API error contains only: HTTP method, URL path (no query params), status code.
+
+### ErrorBoundary fallback UI
+
+When a React render error escapes component-level handling, `Sentry.ErrorBoundary` catches it and shows a clean fallback:
+
+> **Something went wrong.**
+> The issue has been logged. Please refresh the page or try again shortly.
+> [Refresh page]
+
+Stack traces and technical internals are never shown to the user.
+
+### Privacy safeguards
+
+- `sendDefaultPii: false` — no IP addresses, user agents, or personal data attached to events
+- DSN is never logged or exposed in API responses
+- No session replay integration
+- Sentry is completely optional — removing the env vars disables it entirely
 
 ---
 

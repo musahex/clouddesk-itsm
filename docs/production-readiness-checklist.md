@@ -82,13 +82,23 @@ Confirm the build and local stack are working before touching any cloud infrastr
 
 ## F. Monitoring Readiness
 
+### Backend
+
 - [ ] `GET /api/health` returns 200 with `status: "ok"` after deploy
 - [ ] `GET /api/health/live` returns 200 with `status: "alive"`
 - [ ] `GET /api/health/ready` returns 200 with `database: "connected"` — confirms MongoDB connectivity
 - [ ] Logs are streaming in JSON format: `docker compose -f docker-compose.prod.yml logs -f api`
 - [ ] No `Authorization` header values or `password` fields appear in log output
 - [ ] `sentryEnabled` field in `/api/health` response reflects intended configuration
-- [ ] If Sentry is enabled: a test error is visible in the Sentry dashboard
+- [ ] `SENTRY_DSN` is not committed to the repository
+- [ ] If backend Sentry is enabled: a test error is visible in the Sentry `clouddesk-api` project
+
+### Frontend
+
+- [ ] `VITE_SENTRY_DSN` is not committed to the repository — `VITE_SENTRY_ENABLED=false` is the default in `client/.env.example`
+- [ ] If frontend Sentry is enabled: `VITE_SENTRY_ENABLED=true` and `VITE_SENTRY_DSN` are injected as build-time env vars in CI/CD (not hardcoded in source)
+- [ ] If frontend Sentry is enabled: a captured event appears in the Sentry `clouddesk-web` project after deploy
+- [ ] `Sentry.ErrorBoundary` is active — confirmed by `sentryEnabled=true` in `client/src/monitoring/sentry.ts` at build time
 
 ## G. Smoke Tests After Deployment
 

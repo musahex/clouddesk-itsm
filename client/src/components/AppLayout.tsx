@@ -53,7 +53,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {user?.role === 'admin' && (
             <>
               <div className="pt-3 pb-1 px-3">
-                <p className="text-xs font-semibold text-navy-500 uppercase tracking-wider">
+                <p className="text-xs font-semibold text-navy-400 uppercase tracking-wider">
                   Admin
                 </p>
               </div>

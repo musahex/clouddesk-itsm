@@ -69,18 +69,23 @@ Confirm the build and local stack are working before touching any cloud infrastr
 
 ## E. CI/CD Deployment
 
-- [ ] All nine GitHub Actions secrets are set (see `docs/cicd-deployment.md` for the full list)
+- [ ] All eleven GitHub Actions secrets are set (see `docs/cicd-deployment.md` for the full list)
 - [ ] `EC2_SSH_KEY` contains the full private key — tested with a manual SSH connection first
+- [ ] `SENTRY_API_DSN` is set — deploy-backend will fail fast if this secret is missing
+- [ ] `SENTRY_WEB_DSN` is set — deploy-frontend build will fail fast if this secret is missing
 - [ ] `server/.env` exists on EC2 and contains `NODE_ENV=production`, valid `MONGO_URI`, strong `JWT_SECRET`, and `CLIENT_URL`
 - [ ] `git reset --hard` on EC2 does not overwrite `server/.env` (confirm `.env` is in `.gitignore`)
 - [ ] IAM user has least-privilege S3 and CloudFront permissions — no `AdministratorAccess`
 - [ ] A push to `main` triggers the deploy workflow and both `deploy-backend` and `deploy-frontend` jobs succeed
-- [ ] Backend health check passes after deploy: `curl http://localhost:5001/api/health` returns `{"status":"ok"}`
+- [ ] Backend health check passes after deploy: `curl http://localhost:5001/api/health` returns `{"status":"ok","sentryEnabled":true,...}`
 - [ ] CloudFront invalidation completes and the updated React build is visible in the browser
+- [ ] Frontend Sentry is confirmed active from the deployed CloudFront URL (not localhost)
 
 ---
 
 ## F. Monitoring Readiness
+
+### Backend
 
 - [ ] `GET /api/health` returns 200 with `status: "ok"` after deploy
 - [ ] `GET /api/health/live` returns 200 with `status: "alive"`
@@ -88,7 +93,15 @@ Confirm the build and local stack are working before touching any cloud infrastr
 - [ ] Logs are streaming in JSON format: `docker compose -f docker-compose.prod.yml logs -f api`
 - [ ] No `Authorization` header values or `password` fields appear in log output
 - [ ] `sentryEnabled` field in `/api/health` response reflects intended configuration
-- [ ] If Sentry is enabled: a test error is visible in the Sentry dashboard
+- [ ] `SENTRY_DSN` is not committed to the repository
+- [ ] If backend Sentry is enabled: a test error is visible in the Sentry `clouddesk-api` project
+
+### Frontend
+
+- [ ] `VITE_SENTRY_DSN` is not committed to the repository — `VITE_SENTRY_ENABLED=false` is the default in `client/.env.example`
+- [ ] If frontend Sentry is enabled: `VITE_SENTRY_ENABLED=true` and `VITE_SENTRY_DSN` are injected as build-time env vars in CI/CD (not hardcoded in source)
+- [ ] If frontend Sentry is enabled: a captured event appears in the Sentry `clouddesk-web` project after deploy
+- [ ] `Sentry.ErrorBoundary` is active — confirmed by `sentryEnabled=true` in `client/src/monitoring/sentry.ts` at build time
 
 ## G. Smoke Tests After Deployment
 

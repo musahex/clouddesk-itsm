@@ -279,12 +279,23 @@ See [docs/aws-deployment-runbook.md](docs/aws-deployment-runbook.md) for the ful
 | `JWT_SECRET` | **Required** | Signs JWT tokens — server will not start without this |
 | `CLIENT_URL` | No | Deployed frontend URL — added to CORS allowlist in production |
 | `NODE_ENV` | No | Set to `production` in deployed environments |
-| `SENTRY_ENABLED` | No | Set to `true` to enable Sentry. Default: `false`. |
-| `SENTRY_DSN` | If Sentry enabled | Sentry project DSN. Never commit. |
-| `SENTRY_ENVIRONMENT` | No | Sentry environment tag. Defaults to `NODE_ENV`. |
-| `SENTRY_RELEASE` | No | Sentry release tag. Defaults to `clouddesk-api@local`. |
+| `SENTRY_ENABLED` | No | Set to `true` to enable backend Sentry. Default: `false`. |
+| `SENTRY_DSN` | If Sentry enabled | Backend Sentry DSN. Never commit. |
+| `SENTRY_ENVIRONMENT` | No | Backend Sentry environment tag. Defaults to `NODE_ENV`. |
+| `SENTRY_RELEASE` | No | Backend Sentry release tag. Defaults to `clouddesk-api@local`. |
 
 See `server/.env.example` for the template.
+
+**Frontend environment variables** (`client/.env`):
+
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_SENTRY_ENABLED` | No | Set to `true` to enable frontend Sentry. Default: `false`. |
+| `VITE_SENTRY_DSN` | If Sentry enabled | Frontend Sentry DSN. Never commit. |
+| `VITE_SENTRY_ENVIRONMENT` | No | Frontend Sentry environment tag. Defaults to Vite `MODE`. |
+| `VITE_SENTRY_RELEASE` | No | Frontend Sentry release tag. Defaults to `clouddesk-web@local`. |
+
+See `client/.env.example` for the template.
 
 ---
 
@@ -327,9 +338,15 @@ docker compose -f docker-compose.prod.yml logs -f api
 
 `Authorization` headers and `password` fields are redacted from all log output.
 
-### Sentry (optional)
+### Sentry (optional — backend)
 
-Backend error tracking via `@sentry/node` is optional and disabled by default. Set `SENTRY_ENABLED=true` and `SENTRY_DSN=<your-dsn>` to enable. Never commit a real DSN to the repository.
+Backend error tracking via `@sentry/node` is optional and disabled by default. Set `SENTRY_ENABLED=true` and `SENTRY_DSN=<your-dsn>` in `server/.env` on EC2 to enable. Never commit a real DSN.
+
+### Sentry (optional — frontend)
+
+Frontend error tracking via `@sentry/react` is optional and disabled by default. Set `VITE_SENTRY_ENABLED=true` and `VITE_SENTRY_DSN=<your-dsn>` in `client/.env` (locally) or as build-time environment variables in CI/CD.
+
+`Sentry.ErrorBoundary` wraps the app when enabled — unhandled React render errors show a clean fallback rather than a blank page. 5xx API errors and network failures are captured automatically. Auth headers, tokens, passwords, and request bodies are never sent to Sentry.
 
 See [docs/monitoring-runbook.md](docs/monitoring-runbook.md) for full setup, log commands, and incident response guidance.
 
@@ -393,10 +410,10 @@ Two GitHub Actions workflows run on this repo:
 
 On every merge to `main`:
 1. Server and client builds are validated — deploy is blocked if either fails
-2. Backend: SSH to EC2, `git reset --hard`, rebuild Docker image, health check
-3. Frontend: build React client, `aws s3 sync`, CloudFront invalidation
+2. Backend: SSH to EC2, `git reset --hard`, upsert Sentry env vars into `server/.env`, rebuild Docker image, health + readiness check
+3. Frontend: inject `VITE_SENTRY_*` build-time vars, build React client, `aws s3 sync`, CloudFront invalidation
 
-Nine GitHub secrets are required — see [docs/cicd-deployment.md](docs/cicd-deployment.md) for the full list, IAM permissions, and troubleshooting guide.
+Eleven GitHub secrets are required — see [docs/cicd-deployment.md](docs/cicd-deployment.md) for the full list, IAM permissions, and troubleshooting guide.
 
 ---
 

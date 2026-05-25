@@ -77,10 +77,14 @@ Phase 6 is delivering the monitoring foundation in three tasks:
   - Graceful shutdown on SIGTERM/SIGINT
   - `docs/monitoring-runbook.md` with health commands, log format, and incident response
 
-- **Phase 6.2 — Frontend Sentry monitoring** (Planned)
-  - `@sentry/react` in `client/`
-  - ErrorBoundary wrapping the app
-  - Axios interceptor capturing 5xx errors
+- **Phase 6.2 — Frontend Sentry monitoring** ✅ Complete
+  - `@sentry/react` in `client/` (matches backend `@sentry/node` version)
+  - `client/src/monitoring/sentry.ts` — optional init, `captureFrontendException` helper
+  - `Sentry.ErrorBoundary` wraps app in `main.tsx` when `VITE_SENTRY_ENABLED=true`
+  - `AppErrorFallback` component — clean fallback UI, no stack traces shown to user
+  - Axios response interceptor in `http.ts` — captures 5xx and network errors only (no auth headers, tokens, or request bodies)
+  - `client/.env.example` with `VITE_SENTRY_*` vars; `client/src/vite-env.d.ts` for TypeScript env types
+  - `sendDefaultPii: false`, no session replay, privacy-safe by default
 
 - **Phase 6.3 — Admin System Health page** (Planned)
   - Admin-only `/admin/health` API endpoint

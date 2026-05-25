@@ -156,7 +156,7 @@ function HealthBanner({
         </div>
       </div>
       {lastChecked && (
-        <p className="text-xs text-navy-500 shrink-0">
+        <p className="text-xs text-navy-400 shrink-0">
           Last checked {lastChecked.toLocaleTimeString()}
         </p>
       )}
@@ -168,7 +168,7 @@ function SectionHeader({ title, sub }: { title: string; sub?: string }) {
   return (
     <div className="mb-4">
       <h2 className="text-xs font-semibold text-navy-400 uppercase tracking-wider">{title}</h2>
-      {sub && <p className="text-xs text-navy-500 mt-0.5">{sub}</p>}
+      {sub && <p className="text-xs text-navy-400 mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -188,7 +188,7 @@ function StatCard({
     <div className="bg-navy-800 border border-navy-700 rounded-lg p-5">
       <p className="text-xs text-navy-400 mb-1">{label}</p>
       <p className={`text-2xl font-bold truncate ${valueClass}`}>{value}</p>
-      {sub && <p className="text-xs text-navy-500 mt-1 truncate">{sub}</p>}
+      {sub && <p className="text-xs text-navy-400 mt-1 truncate">{sub}</p>}
     </div>
   );
 }
@@ -196,7 +196,7 @@ function StatCard({
 function RouteMetricsTable({ rows }: { rows: RouteMetric[] }) {
   if (rows.length === 0) {
     return (
-      <p className="text-navy-500 text-sm py-4">
+      <p className="text-navy-400 text-sm py-4">
         No route metrics captured yet — metrics reset on server restart.
       </p>
     );
@@ -206,13 +206,13 @@ function RouteMetricsTable({ rows }: { rows: RouteMetric[] }) {
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-navy-700">
-            <th className="text-left py-2 pr-4 text-navy-500 font-medium">Method</th>
-            <th className="text-left py-2 pr-4 text-navy-500 font-medium">Path</th>
-            <th className="text-right py-2 pr-4 text-navy-500 font-medium">Count</th>
-            <th className="text-right py-2 pr-4 text-navy-500 font-medium">Avg Response</th>
-            <th className="text-right py-2 pr-4 text-navy-500 font-medium">Last Status</th>
-            <th className="text-right py-2 pr-4 text-navy-500 font-medium">Errors</th>
-            <th className="text-right py-2 text-navy-500 font-medium">Last Called</th>
+            <th className="text-left py-2 pr-4 text-navy-400 font-medium">Method</th>
+            <th className="text-left py-2 pr-4 text-navy-400 font-medium">Path</th>
+            <th className="text-right py-2 pr-4 text-navy-400 font-medium">Count</th>
+            <th className="text-right py-2 pr-4 text-navy-400 font-medium">Avg Response</th>
+            <th className="text-right py-2 pr-4 text-navy-400 font-medium">Last Status</th>
+            <th className="text-right py-2 pr-4 text-navy-400 font-medium">Errors</th>
+            <th className="text-right py-2 text-navy-400 font-medium">Last Called</th>
           </tr>
         </thead>
         <tbody>
@@ -236,12 +236,12 @@ function RouteMetricsTable({ rows }: { rows: RouteMetric[] }) {
               </td>
               <td
                 className={`py-2 pr-4 text-right tabular-nums font-medium ${
-                  r.errorCount > 0 ? 'text-red-400' : 'text-navy-600'
+                  r.errorCount > 0 ? 'text-red-400' : 'text-navy-400'
                 }`}
               >
                 {r.errorCount}
               </td>
-              <td className="py-2 text-right text-navy-500">{formatTime(r.lastCalledAt)}</td>
+              <td className="py-2 text-right text-navy-400">{formatTime(r.lastCalledAt)}</td>
             </tr>
           ))}
         </tbody>
@@ -253,7 +253,7 @@ function RouteMetricsTable({ rows }: { rows: RouteMetric[] }) {
 function EventsTable({ events }: { events: AppEvent[] }) {
   if (events.length === 0) {
     return (
-      <p className="text-navy-500 text-sm py-4">No application events captured yet.</p>
+      <p className="text-navy-400 text-sm py-4">No application events captured yet.</p>
     );
   }
   return (
@@ -261,13 +261,13 @@ function EventsTable({ events }: { events: AppEvent[] }) {
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-navy-700">
-            <th className="text-left py-2 pr-3 text-navy-500 font-medium">Time</th>
-            <th className="text-left py-2 pr-3 text-navy-500 font-medium">Level</th>
-            <th className="text-left py-2 pr-3 text-navy-500 font-medium">Method</th>
-            <th className="text-left py-2 pr-3 text-navy-500 font-medium">Path</th>
-            <th className="text-right py-2 pr-3 text-navy-500 font-medium">Status</th>
-            <th className="text-right py-2 pr-3 text-navy-500 font-medium">Response Time</th>
-            <th className="text-left py-2 text-navy-500 font-medium">Message</th>
+            <th className="text-left py-2 pr-3 text-navy-400 font-medium">Time</th>
+            <th className="text-left py-2 pr-3 text-navy-400 font-medium">Level</th>
+            <th className="text-left py-2 pr-3 text-navy-400 font-medium">Method</th>
+            <th className="text-left py-2 pr-3 text-navy-400 font-medium">Path</th>
+            <th className="text-right py-2 pr-3 text-navy-400 font-medium">Status</th>
+            <th className="text-right py-2 pr-3 text-navy-400 font-medium">Response Time</th>
+            <th className="text-left py-2 text-navy-400 font-medium">Message</th>
           </tr>
         </thead>
         <tbody>
@@ -276,7 +276,7 @@ function EventsTable({ events }: { events: AppEvent[] }) {
               key={`${ev.timestamp}-${i}`}
               className={`border-b border-navy-700/40 ${i % 2 !== 0 ? 'bg-navy-800/40' : ''}`}
             >
-              <td className="py-1.5 pr-3 text-navy-500 tabular-nums whitespace-nowrap">
+              <td className="py-1.5 pr-3 text-navy-400 tabular-nums whitespace-nowrap">
                 {formatTime(ev.timestamp)}
               </td>
               <td className={`py-1.5 pr-3 font-semibold uppercase ${levelClass(ev.level)}`}>
@@ -373,7 +373,7 @@ export default function SystemHealthPage() {
           <button
             onClick={loadHealth}
             disabled={isLoading}
-            className="bg-teal-600 hover:bg-teal-500 disabled:bg-navy-700 disabled:text-navy-500 text-white text-sm font-semibold rounded-md px-4 py-2 transition-colors"
+            className="bg-teal-600 hover:bg-teal-500 disabled:bg-navy-700 disabled:text-navy-400 text-white text-sm font-semibold rounded-md px-4 py-2 transition-colors"
           >
             {isLoading ? 'Loading…' : 'Refresh'}
           </button>
@@ -422,7 +422,7 @@ export default function SystemHealthPage() {
                     </span>
                   </div>
                   <p className="text-sm font-semibold text-white">{data.service}</p>
-                  <p className="text-xs text-navy-500 mt-1">
+                  <p className="text-xs text-navy-400 mt-1">
                     Uptime {formatUptime(data.uptimeSeconds)}
                   </p>
                 </div>
@@ -442,7 +442,7 @@ export default function SystemHealthPage() {
                     </span>
                   </div>
                   <p className="text-sm font-semibold text-white">MongoDB</p>
-                  <p className="text-xs text-navy-500 mt-1">
+                  <p className="text-xs text-navy-400 mt-1">
                     readyState {data.database.readyState}
                   </p>
                 </div>
@@ -464,7 +464,7 @@ export default function SystemHealthPage() {
                   <p className="text-sm font-semibold text-white">
                     {sentryEnabled ? 'Sentry Enabled' : 'Sentry Disabled'}
                   </p>
-                  <p className="text-xs text-navy-500 mt-1 truncate">
+                  <p className="text-xs text-navy-400 mt-1 truncate">
                     {sentryEnabled
                       ? `Release: ${data.monitoring.apiRelease}`
                       : 'Not enabled for this environment'}
@@ -488,7 +488,7 @@ export default function SystemHealthPage() {
                   <p className="text-sm font-semibold text-white">
                     {formatDateTime(data.timestamp)}
                   </p>
-                  <p className="text-xs text-navy-500 mt-1">Server timestamp</p>
+                  <p className="text-xs text-navy-400 mt-1">Server timestamp</p>
                 </div>
               </div>
             </div>
@@ -511,10 +511,10 @@ export default function SystemHealthPage() {
                   <p className="text-2xl font-bold text-white">
                     {formatMb(rt?.memory.heapUsedMb ?? 0)}
                   </p>
-                  <p className="text-xs text-navy-500 mt-1">
+                  <p className="text-xs text-navy-400 mt-1">
                     heap used / {formatMb(rt?.memory.heapTotalMb ?? 0)} total
                   </p>
-                  <p className="text-xs text-navy-500">RSS {formatMb(rt?.memory.rssMb ?? 0)}</p>
+                  <p className="text-xs text-navy-400">RSS {formatMb(rt?.memory.rssMb ?? 0)}</p>
                 </div>
                 <StatCard
                   label="Node.js Version"
@@ -566,7 +566,7 @@ export default function SystemHealthPage() {
                   label="Critical Tickets"
                   value={app?.tickets.critical ?? 0}
                   valueClass={
-                    (app?.tickets.critical ?? 0) > 0 ? 'text-red-400' : 'text-navy-500'
+                    (app?.tickets.critical ?? 0) > 0 ? 'text-red-400' : 'text-navy-400'
                   }
                 />
                 <StatCard
@@ -590,7 +590,7 @@ export default function SystemHealthPage() {
               />
 
               {/* In-memory note */}
-              <p className="text-xs text-navy-600 mb-4">
+              <p className="text-xs text-navy-400 mb-4">
                 Metrics are stored in memory and reset whenever the API container restarts.
               </p>
 
@@ -620,7 +620,7 @@ export default function SystemHealthPage() {
                   label="5xx Server Err"
                   value={req?.status5xx ?? 0}
                   valueClass={
-                    (req?.status5xx ?? 0) > 0 ? 'text-red-400' : 'text-navy-600'
+                    (req?.status5xx ?? 0) > 0 ? 'text-red-400' : 'text-navy-400'
                   }
                 />
                 <StatCard
@@ -662,7 +662,7 @@ export default function SystemHealthPage() {
                       <p className={`text-base font-bold font-mono tabular-nums ${methodClass(method)}`}>
                         {count}
                       </p>
-                      <p className="text-xs text-navy-500 mt-0.5">{method}</p>
+                      <p className="text-xs text-navy-400 mt-0.5">{method}</p>
                     </div>
                   ))}
                 </div>
@@ -702,12 +702,12 @@ export default function SystemHealthPage() {
                   {/* Events header row */}
                   <div className="flex items-center justify-between mb-3 gap-4">
                     <div className="min-w-0">
-                      <p className="text-xs text-navy-500">
+                      <p className="text-xs text-navy-400">
                         These are sanitised application events, not raw backend logs.
                         Capped at 200 events. Resets on server restart.
                       </p>
                       {totalAvailable > 0 && (
-                        <p className="text-xs text-navy-600 mt-0.5">
+                        <p className="text-xs text-navy-400 mt-0.5">
                           Showing 50 most recent of {totalAvailable} buffered events.
                         </p>
                       )}
@@ -715,7 +715,7 @@ export default function SystemHealthPage() {
                     <button
                       onClick={loadEvents}
                       disabled={eventsLoading}
-                      className="text-xs text-teal-400 hover:text-teal-300 disabled:text-navy-600 transition-colors shrink-0"
+                      className="text-xs text-teal-400 hover:text-teal-300 disabled:text-navy-400 transition-colors shrink-0"
                     >
                       {eventsLoading ? 'Loading…' : 'Refresh Events'}
                     </button>

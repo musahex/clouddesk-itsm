@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import apiRoutes from './routes/index';
 import User from './models/User';
-import { logger, httpLogger } from './monitoring/logger';
+import { logger, httpLogger, metricsMiddleware } from './monitoring/logger';
 import { captureException } from './monitoring/sentry';
 
 const app = express();
@@ -36,6 +36,9 @@ app.use(express.json());
 
 // Structured request logging
 app.use(httpLogger);
+
+// In-memory metrics and safe event buffer — resets on server restart
+app.use(metricsMiddleware);
 
 // General rate limit — 200 requests per 15 minutes per IP
 const generalLimiter = rateLimit({

@@ -57,18 +57,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   Admin
                 </p>
               </div>
-              <NavLink
-                to="/admin/support-agents/new"
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-teal-600/20 text-teal-400'
-                      : 'text-navy-300 hover:bg-navy-700 hover:text-white'
-                  }`
-                }
-              >
-                Create Support Agent
-              </NavLink>
+              {[
+                { to: '/admin/support-agents/new', label: 'Create Support Agent' },
+                { to: '/admin/system-health', label: 'System Health' },
+              ].map(({ to, label }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-teal-600/20 text-teal-400'
+                        : 'text-navy-300 hover:bg-navy-700 hover:text-white'
+                    }`
+                  }
+                >
+                  {label}
+                </NavLink>
+              ))}
             </>
           )}
         </nav>

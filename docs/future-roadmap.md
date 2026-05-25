@@ -86,10 +86,13 @@ Phase 6 is delivering the monitoring foundation in three tasks:
   - `client/.env.example` with `VITE_SENTRY_*` vars; `client/src/vite-env.d.ts` for TypeScript env types
   - `sendDefaultPii: false`, no session replay, privacy-safe by default
 
-- **Phase 6.3 — Admin System Health page** (Planned)
-  - Admin-only `/admin/health` API endpoint
-  - Frontend System Health page at `/admin/health`
-  - Cards: API status, MongoDB status, Sentry enabled/disabled, uptime, environment, timestamp
+- **Phase 6.3 — Admin System Health dashboard** ✅ Complete
+  - Admin-only `GET /api/system/health` — full system health, runtime, DB counts, request metrics, route metrics
+  - Admin-only `GET /api/system/events` — last 200 sanitized application events (no bodies, headers, or credentials)
+  - In-memory request metrics collector with path sanitization (ObjectIds replaced with `:id`)
+  - Safe application events ring buffer (capped at 200, resets on restart)
+  - Frontend System Health page at `/admin/system-health`: status cards, runtime, application data, request metrics, method breakdown, route metrics table, Recent Application Events toggle
+  - `docs/incident-response-runbook.md` — 14-incident response guide
 
 Remaining Stage 3 observability work:
 

@@ -14,7 +14,9 @@ CloudDesk uses these monitoring layers:
 | Health / liveness / readiness | Express health routes | Active (Phase 6.1) |
 | Backend error tracking | Sentry (`@sentry/node`) | Optional — disabled by default |
 | Frontend error tracking | Sentry (`@sentry/react`) | Active (Phase 6.2) — optional |
-| Admin health dashboard | System Health page | Planned (Phase 6.3) |
+| In-memory request metrics | `monitoring/metrics.ts` | Active (Phase 6.3) |
+| Safe application events buffer | `monitoring/events.ts` | Active (Phase 6.3) |
+| Admin System Health dashboard | `/admin/system-health` | Active (Phase 6.3) |
 | CloudWatch log shipping | CloudWatch Logs agent | Planned (Stage 3) |
 
 ---
@@ -476,6 +478,80 @@ docker compose -f docker-compose.prod.yml exec api printenv | grep SENTRY
 - DSN is for the wrong Sentry project
 
 **Fix:** Correct `SENTRY_ENABLED=true` and `SENTRY_DSN=<your-dsn>` in `server/.env`. Restart the container.
+
+---
+
+---
+
+## Admin System Health Dashboard
+
+The `/admin/system-health` page is an admin-only browser dashboard. It is served by the React SPA and fetches data from two protected API endpoints.
+
+### Access
+
+- URL: `/admin/system-health`
+- Requires: logged in as `admin` role
+- Non-admin users are redirected to `/dashboard`
+
+### Endpoints
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/api/system/health` | GET | Admin only | Full system health, metrics, and DB counts |
+| `/api/system/events` | GET | Admin only | Recent sanitized application events |
+
+Both endpoints require a valid JWT `Authorization: Bearer <token>` header and reject non-admin tokens with HTTP 403.
+
+### What the page shows
+
+- **Status cards** — API status (ok/degraded), database connectivity, Sentry status, environment
+- **Runtime** — uptime, memory usage, Node.js version, process ID
+- **Application data** — user count, ticket counts, KB article counts (queried from MongoDB)
+- **Request metrics** — total requests, status code groups, error rate, response times (all since last restart)
+- **Method breakdown** — counts per HTTP method
+- **Route metrics table** — top routes by call count with average response time and error count
+- **Recent Application Events** — collapsible panel showing the last 50 sanitized request events
+
+### In-memory metrics
+
+The metrics collector (`server/src/monitoring/metrics.ts`) tracks request data in module-level state. **Metrics reset on every server restart.** This is intentional — the purpose is operational awareness of the current process, not long-term analytics.
+
+Safe fields only: method, sanitized path, status code, response time. No request bodies, headers, query strings, or credentials are stored.
+
+Dynamic path segments (MongoDB ObjectIds) are replaced with `:id`:
+- `/api/tickets/507f1f77bcf86cd799439011` → `/api/tickets/:id`
+
+### Recent Application Events
+
+The events buffer (`server/src/monitoring/events.ts`) holds the last 200 request events. Each event contains:
+
+| Field | Example |
+|---|---|
+| `timestamp` | `"2026-05-26T10:00:00.000Z"` |
+| `level` | `"info"` / `"warn"` / `"error"` |
+| `method` | `"GET"` |
+| `path` | `"/api/dashboard"` |
+| `statusCode` | `200` |
+| `responseTimeMs` | `43` |
+| `message` | `"GET /api/dashboard 200 43ms"` |
+
+**Not stored:** request body, Authorization header, query parameters, passwords, tokens, stack traces, Sentry DSN, MongoDB URI, JWT secret.
+
+The `/api/system/events?limit=50` endpoint returns the 50 most recent events, newest first.
+
+### What is intentionally not exposed
+
+- MongoDB URI
+- JWT secret
+- Sentry DSN
+- Individual user emails or IDs
+- Request bodies
+- Authorization headers
+- Stack traces
+- Raw pino log output
+- Docker daemon state
+
+Raw Docker logs are only available by SSH-ing into EC2: `docker compose -f docker-compose.prod.yml logs api --tail=100`.
 
 ---
 

@@ -103,6 +103,17 @@ Confirm the build and local stack are working before touching any cloud infrastr
 - [ ] If frontend Sentry is enabled: a captured event appears in the Sentry `clouddesk-web` project after deploy
 - [ ] `Sentry.ErrorBoundary` is active — confirmed by `sentryEnabled=true` in `client/src/monitoring/sentry.ts` at build time
 
+### System Health dashboard (Phase 6.3)
+
+- [ ] `/admin/system-health` page loads without error when logged in as admin
+- [ ] Non-admin users (requester, support_agent) are redirected away from `/admin/system-health`
+- [ ] `GET /api/system/health` returns HTTP 200 with `status: "ok"` and `database.status: "connected"` after deploy
+- [ ] `GET /api/system/events?limit=50` returns events array with sanitized fields only
+- [ ] `GET /api/system/health` returns HTTP 403 when called with a requester or support_agent token
+- [ ] Route metrics table on the health page shows entries after initial traffic (send a few test requests)
+- [ ] In-memory metrics reset on server restart is confirmed — restart container and verify counts return to zero
+- [ ] No MongoDB URI, JWT secret, Sentry DSN, request headers, or stack traces are visible in any API response
+
 ## G. Smoke Tests After Deployment
 
 Run through each test immediately after deploying. Repeat after any update.

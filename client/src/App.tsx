@@ -13,6 +13,7 @@ import KnowledgeArticlePage from './pages/KnowledgeArticlePage';
 import CreateKnowledgeArticlePage from './pages/CreateKnowledgeArticlePage';
 import EditKnowledgeArticlePage from './pages/EditKnowledgeArticlePage';
 import CreateSupportAgentPage from './pages/CreateSupportAgentPage';
+import SystemHealthPage from './pages/SystemHealthPage';
 
 // Redirects already-authenticated users away from public pages
 function PublicRoute({ children }: { children: React.ReactNode }) {
@@ -111,6 +112,14 @@ function AppRoutes() {
         element={
           <AdminRoute>
             <CreateSupportAgentPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/system-health"
+        element={
+          <AdminRoute>
+            <SystemHealthPage />
           </AdminRoute>
         }
       />

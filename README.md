@@ -40,6 +40,7 @@ The goal was to build something that an Australian IT hiring manager could look 
 - **KB Search** — Search by title, content, category, and tags via dedicated search endpoint
 - **Dashboard Metrics** — Ticket counts, status/priority/category breakdowns, and recent tickets — scoped by role
 - **Support Agent Creation** — Admin-only browser page (`/admin/support-agents/new`) creates `support_agent` accounts with password validation
+- **System Health Dashboard** — Admin-only page (`/admin/system-health`) showing API status, DB connectivity, runtime metrics, request counts, route metrics, and a sanitized application event log
 - **Seed Script** — One-command demo user creation for local testing
 
 ---
@@ -348,7 +349,21 @@ Frontend error tracking via `@sentry/react` is optional and disabled by default.
 
 `Sentry.ErrorBoundary` wraps the app when enabled — unhandled React render errors show a clean fallback rather than a blank page. 5xx API errors and network failures are captured automatically. Auth headers, tokens, passwords, and request bodies are never sent to Sentry.
 
+### System Health dashboard (admin only)
+
+The admin-only `/admin/system-health` page provides a live view of the running application:
+
+- **Status** — API status (ok/degraded), MongoDB connectivity, Sentry state, environment
+- **Runtime** — uptime, memory usage, Node.js version, process ID
+- **Application data** — user count, ticket counts, KB article counts (live from MongoDB)
+- **Request metrics** — total requests, status code groups (2xx/3xx/4xx/5xx), error rate, average and slowest response time
+- **Route metrics** — top endpoints by call count with per-route error counts and average response time
+- **Recent Application Events** — last 50 sanitized request events (no bodies, headers, or credentials)
+
+In-memory metrics reset on server restart. No secrets are exposed.
+
 See [docs/monitoring-runbook.md](docs/monitoring-runbook.md) for full setup, log commands, and incident response guidance.
+See [docs/incident-response-runbook.md](docs/incident-response-runbook.md) for the 14-incident response guide.
 
 ### Admin Account Strategy
 
@@ -453,6 +468,8 @@ Base URL: `http://localhost:5001/api`
 | PATCH | `/kb/:id` | Update article | Agent/Admin |
 | DELETE | `/kb/:id` | Delete article | Admin |
 | GET | `/dashboard` | Dashboard metrics | Any |
+| GET | `/system/health` | Full system health, metrics, and DB counts | Admin |
+| GET | `/system/events` | Recent sanitized application events | Admin |
 
 Full request/response documentation: [docs/api.md](docs/api.md)
 
@@ -504,7 +521,8 @@ Stage 1 deliberately excludes AWS deployment, S3, CloudWatch, and ServiceNow int
 | [AWS Deployment Runbook](docs/aws-deployment-runbook.md) | Step-by-step EC2 + S3 + CloudFront deployment guide |
 | [AWS Cost Control](docs/aws-cost-control.md) | Budget alerts, teardown checklist, cost risk notes |
 | [Production Readiness Checklist](docs/production-readiness-checklist.md) | Pre-deployment, security, smoke test, and teardown checklist |
-| [Monitoring Runbook](docs/monitoring-runbook.md) | Health checks, structured logging, Sentry setup, incident response |
+| [Monitoring Runbook](docs/monitoring-runbook.md) | Health checks, structured logging, Sentry setup, System Health dashboard |
+| [Incident Response Runbook](docs/incident-response-runbook.md) | 14-incident response guide: API failures, MongoDB, CloudFront, CORS, Sentry, disk, 5xx errors |
 | [Stage 1 Case Study](docs/stage-1-case-study.md) | Project write-up for portfolio review |
 | [Future Roadmap](docs/future-roadmap.md) | Stage 2–4 plans including AWS, monitoring, and ServiceNow mapping |
 

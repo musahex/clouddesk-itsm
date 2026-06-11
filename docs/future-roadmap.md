@@ -115,6 +115,48 @@ Remaining Stage 3 observability work:
 
 ---
 
+## Phase 7 — Scalability and Resilience
+
+**Goal:** Evolve CloudDesk from a single-instance deployment to a horizontally scalable, observable architecture. Document the migration path, fix the immediate scale-readiness gaps in the application, and demonstrate cloud architecture thinking for portfolio and interview contexts.
+
+### Phase 7.1 — Scalability Architecture Plan ✅ Complete
+
+- `docs/scalability-plan.md` — documents current architecture, scale-friendly foundations, current limitations, target scalable architecture (ECS/Fargate + ALB + ECR + CloudWatch), and a staged migration roadmap (Stages A–D)
+- Scale-readiness checklist — identifies what is complete and what remains
+- Cost-control guidance — stages each migration step by approximate monthly cost impact
+- Employer-facing summary — frames the architectural thinking for portfolio use
+
+### Phase 7.2 — Backend Scale-Readiness Improvements (Planned)
+
+- Redis-backed rate limiting — replace in-memory `express-rate-limit` store with `ioredis` + `rate-limit-redis` for multi-instance correctness
+- MongoDB compound indexes — add explicit index definitions for common ticket and KB query patterns
+- Fix `bg-navy-500` in DashboardPage — `navy-500` is undefined in `tailwind.config.js`; the 'Closed' status bar renders with no background
+
+### Phase 7.3 — CloudWatch Logs Integration (Planned)
+
+- Ship Docker container logs from EC2 to CloudWatch Logs via the `awslogs` Docker log driver
+- Add EC2 IAM instance role permissions for CloudWatch Logs (`logs:CreateLogGroup`, `logs:CreateLogStream`, `logs:PutLogEvents`)
+- Add CloudWatch Alarms for EC2 CPU and disk usage
+- Update monitoring runbook with log streaming commands
+
+### Phase 7.4 — Load Testing Baseline (Planned)
+
+- Write k6 or Artillery load test scripts for health, tickets, and dashboard endpoints
+- Run baseline against the local Docker Compose stack
+- Document p50/p95/p99 response times and throughput ceiling
+- Create `docs/load-testing-baseline.md`
+
+### Phase 7.5 — ECR + ECS/Fargate Migration (Future — cost-gated)
+
+- Build Docker image in CI, push to ECR with git SHA tag
+- Create ECS cluster and Fargate task definition
+- Deploy ALB with `/api/health/ready` target group health check
+- Update CloudFront `/api/*` origin from EC2 to ALB DNS
+- Move secrets to SSM Parameter Store or Secrets Manager
+- Update CI/CD to push to ECR and update ECS service instead of SSH-deploying to EC2
+
+---
+
 ## Stage 4 — ServiceNow Workflow Mapping and Advanced Support
 
 **Goal:** Deepen the ITSM feature set to more closely mirror enterprise ServiceNow functionality.

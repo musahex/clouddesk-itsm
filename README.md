@@ -523,6 +523,7 @@ Stage 1 deliberately excludes AWS deployment, S3, CloudWatch, and ServiceNow int
 | [Production Readiness Checklist](docs/production-readiness-checklist.md) | Pre-deployment, security, smoke test, and teardown checklist |
 | [Monitoring Runbook](docs/monitoring-runbook.md) | Health checks, structured logging, Sentry setup, System Health dashboard |
 | [Incident Response Runbook](docs/incident-response-runbook.md) | 14-incident response guide: API failures, MongoDB, CloudFront, CORS, Sentry, disk, 5xx errors |
+| [Scalability Plan](docs/scalability-plan.md) | Current architecture, limitations, target scalable architecture, and staged migration roadmap |
 | [Stage 1 Case Study](docs/stage-1-case-study.md) | Project write-up for portfolio review |
 | [Future Roadmap](docs/future-roadmap.md) | Stage 2–4 plans including AWS, monitoring, and ServiceNow mapping |
 

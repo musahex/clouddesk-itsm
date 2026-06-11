@@ -285,3 +285,30 @@ HTTP status codes follow REST conventions: `400` (validation), `401` (unauthenti
 | IAM | Least-privilege roles per service |
 
 The Express API is stateless (JWT auth, no server-side session), making it straightforward to run in containers or behind an auto-scaling group.
+
+---
+
+## Phase 7 — Scalable Target Architecture
+
+The staged migration from the current single-EC2 deployment to a fully managed, horizontally scalable setup is documented in [`docs/scalability-plan.md`](scalability-plan.md).
+
+The target architecture replaces the direct EC2 origin with ECS Fargate tasks behind an Application Load Balancer:
+
+```
+Browser
+  ↓
+CloudFront
+  ├── Default (*) → S3 React Frontend
+  └── /api/* → Application Load Balancer
+                    ↓
+             ECS Fargate Service
+             ├── API Task 1
+             ├── API Task 2
+             └── API Task N (autoscaled)
+                    ↓
+             MongoDB Atlas
+```
+
+Key properties of this target state: immutable images in ECR, rolling deploys via ECS service updates, ALB health checks using the existing `/api/health/ready` endpoint, CloudWatch Logs for durable log storage, and SSM Parameter Store for runtime secrets. The Express API requires no application-level changes to run in this configuration — the stateless JWT design, health endpoints, and graceful shutdown are already in place. Rate limiting must move to a Redis-backed store before multiple tasks run behind the ALB.
+
+See [`docs/scalability-plan.md`](scalability-plan.md) for the full migration roadmap, scale-readiness checklist, and cost-control guidance.

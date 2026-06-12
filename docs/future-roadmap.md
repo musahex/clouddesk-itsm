@@ -133,19 +133,22 @@ Remaining Stage 3 observability work:
 - **Fix `bg-navy-500` in DashboardPage** — `navy-500` is not defined in `tailwind.config.js` (scale is 950/900/800/700/600/400/300). The 'Closed' status bar class corrected to `bg-navy-600`.
 - **Scale-readiness checklist updated** — `docs/scalability-plan.md` checklist now marks Redis rate limiting and MongoDB indexes as complete.
 
-### Phase 7.3 — CloudWatch Logs Integration (Planned)
+### Phase 7.3 — Load Testing Baseline ✅ Complete
+
+- **`load-tests/` directory** — isolated Node.js package with `autocannon` as the only dependency; does not touch server or client production dependencies
+- **`load-tests/scripts/health-baseline.js`** — unauthenticated load test against `GET /api/health` and `GET /api/health/ready`; 10 connections, 20s per endpoint by default; prints req/sec, avg latency, p97.5, p99, errors, timeouts, non-2xx
+- **`load-tests/scripts/authenticated-baseline.js`** — authenticated read endpoint test against `GET /api/dashboard`, `GET /api/tickets`, `GET /api/kb`; logs in **once** at the start and reuses the JWT for all connections (avoids hammering the auth rate-limited endpoint); 5 connections, 20s per endpoint by default; never prints JWT or password
+- **`load-tests/scripts/rate-limit-check.js`** — sequential functional check (25 invalid logins with fake credentials) confirming that auth rate limiting (20 req/15 min) produces 429 responses; not a throughput test
+- **`load-tests/README.md`** — setup, usage, safety rules, environment variable reference, metrics explanation
+- **`docs/load-testing-baseline.md`** — test environment documentation, scenario descriptions, results tables (to be filled after first run), metrics interpretation, limitations, and future comparison points
+- All scripts target `http://localhost:5001` by default — set `BASE_URL` to override; do not run aggressively against production
+
+### Phase 7.4 — CloudWatch Logs Integration (Planned)
 
 - Ship Docker container logs from EC2 to CloudWatch Logs via the `awslogs` Docker log driver
 - Add EC2 IAM instance role permissions for CloudWatch Logs (`logs:CreateLogGroup`, `logs:CreateLogStream`, `logs:PutLogEvents`)
 - Add CloudWatch Alarms for EC2 CPU and disk usage
 - Update monitoring runbook with log streaming commands
-
-### Phase 7.4 — Load Testing Baseline (Planned)
-
-- Write k6 or Artillery load test scripts for health, tickets, and dashboard endpoints
-- Run baseline against the local Docker Compose stack
-- Document p50/p95/p99 response times and throughput ceiling
-- Create `docs/load-testing-baseline.md`
 
 ### Phase 7.5 — ECR + ECS/Fargate Migration (Future — cost-gated)
 

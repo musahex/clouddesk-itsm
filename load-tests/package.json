@@ -1,0 +1,17 @@
+{
+  "name": "clouddesk-load-tests",
+  "version": "1.0.0",
+  "description": "Load testing baseline scripts for the CloudDesk API",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "health": "node scripts/health-baseline.js",
+    "authenticated": "node scripts/authenticated-baseline.js",
+    "rate-limit": "node scripts/rate-limit-check.js"
+  },
+  "dependencies": {
+    "autocannon": "^8.0.0"
+  }
+}

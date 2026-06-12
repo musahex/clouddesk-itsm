@@ -23,12 +23,15 @@ function buildLimiters() {
         prefix,
       });
 
-    logger.info('Rate limiting: Redis-backed store active — distributed, multi-instance safe');
+    logger.info(
+      { generalMax: env.rateLimitMaxGeneral, authMax: env.rateLimitMaxAuth },
+      'Rate limiting: Redis-backed store active — distributed, multi-instance safe',
+    );
 
     return {
       generalLimiter: rateLimit({
         windowMs: WINDOW_MS,
-        max: 200,
+        max: env.rateLimitMaxGeneral,
         standardHeaders: true,
         legacyHeaders: false,
         message: { message: 'Too many requests. Please try again later.' },
@@ -36,7 +39,7 @@ function buildLimiters() {
       }),
       authLimiter: rateLimit({
         windowMs: WINDOW_MS,
-        max: 20,
+        max: env.rateLimitMaxAuth,
         standardHeaders: true,
         legacyHeaders: false,
         message: { message: 'Too many authentication attempts. Please try again later.' },
@@ -48,20 +51,21 @@ function buildLimiters() {
   // REDIS_URL not set — fall back to the default in-memory store.
   // Acceptable for single-instance deployment; use REDIS_URL in multi-instance environments.
   logger.info(
+    { generalMax: env.rateLimitMaxGeneral, authMax: env.rateLimitMaxAuth },
     'Rate limiting: in-memory store (process-local) — set REDIS_URL for multi-instance deployments',
   );
 
   return {
     generalLimiter: rateLimit({
       windowMs: WINDOW_MS,
-      max: 200,
+      max: env.rateLimitMaxGeneral,
       standardHeaders: true,
       legacyHeaders: false,
       message: { message: 'Too many requests. Please try again later.' },
     }),
     authLimiter: rateLimit({
       windowMs: WINDOW_MS,
-      max: 20,
+      max: env.rateLimitMaxAuth,
       standardHeaders: true,
       legacyHeaders: false,
       message: { message: 'Too many authentication attempts. Please try again later.' },

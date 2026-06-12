@@ -298,7 +298,7 @@ This section identifies the specific code and configuration points that need att
 - [ ] Managed secrets store — SSM Parameter Store or Secrets Manager (Stage C)
 - [ ] Staging environment — pre-production validation before production deploy
 - [ ] Deploy approval gate — human review step before production
-- [ ] Load testing baseline — measured performance characteristics under load
+- [x] Load testing baseline — `load-tests/` scripts established; see `docs/load-testing-baseline.md` (Phase 7.3)
 
 ---
 

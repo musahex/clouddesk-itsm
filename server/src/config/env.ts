@@ -59,6 +59,16 @@ const sentryRelease = process.env.SENTRY_RELEASE ?? 'clouddesk-api@local';
 // When not set the app falls back to the in-memory rate-limit store (correct for single instance).
 const redisUrl = process.env.REDIS_URL || undefined;
 
+// Rate limit overrides — optional. Defaults match production values.
+// Raise these locally (e.g. via docker-compose.yml) when running load tests.
+// Do NOT override in production.
+const rateLimitMaxGeneral = process.env.RATE_LIMIT_MAX_GENERAL
+  ? parseInt(process.env.RATE_LIMIT_MAX_GENERAL, 10)
+  : 200;
+const rateLimitMaxAuth = process.env.RATE_LIMIT_MAX_AUTH
+  ? parseInt(process.env.RATE_LIMIT_MAX_AUTH, 10)
+  : 20;
+
 export const env = {
   port: portNum,
   mongoUri,
@@ -72,4 +82,6 @@ export const env = {
   sentryEnvironment,
   sentryRelease,
   redisUrl,
+  rateLimitMaxGeneral,
+  rateLimitMaxAuth,
 } as const;

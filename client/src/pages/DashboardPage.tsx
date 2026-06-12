@@ -27,7 +27,7 @@ const STATUS_BAR_CLASSES: Record<TicketStatus, string> = {
   'In Progress': 'bg-teal-400',
   Escalated: 'bg-orange-400',
   Resolved: 'bg-green-400',
-  Closed: 'bg-navy-500',
+  Closed: 'bg-navy-600',
 };
 
 const STATUS_TEXT_CLASSES: Record<TicketStatus, string> = {

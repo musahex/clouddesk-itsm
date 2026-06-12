@@ -10,8 +10,10 @@ services:
       JWT_SECRET: local_docker_dev_secret_change_later
       NODE_ENV: development
       CLIENT_URL: http://localhost:5173
+      REDIS_URL: redis://redis:6379
     depends_on:
       - mongo
+      - redis
     restart: unless-stopped
 
   mongo:
@@ -21,6 +23,13 @@ services:
       - "27017:27017"
     volumes:
       - clouddesk-mongo-data:/data/db
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: clouddesk-redis
+    ports:
+      - "6379:6379"
     restart: unless-stopped
 
 volumes:

@@ -44,4 +44,13 @@ const knowledgeArticleSchema = new Schema<IKnowledgeArticle>(
   { timestamps: true }
 );
 
+// Published article list sorted by date (default KB list view for all roles)
+knowledgeArticleSchema.index({ isPublished: 1, createdAt: -1 });
+
+// Published articles filtered by category (KB category filtering)
+knowledgeArticleSchema.index({ isPublished: 1, category: 1 });
+
+// Note: the search endpoint uses $regex on title/content and $in on tags.
+// Regex queries require a collection scan regardless of index; no text index is added.
+
 export default mongoose.model<IKnowledgeArticle>('KnowledgeArticle', knowledgeArticleSchema);

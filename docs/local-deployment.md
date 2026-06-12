@@ -22,13 +22,14 @@ This document covers running the CloudDesk API and MongoDB through Docker Compos
 │  │  ┌─────────────────────────┐     │    │
 │  │  │  clouddesk-api          │     │    │
 │  │  │  Express API :5001      │     │    │
-│  │  └──────────┬──────────────┘     │    │
-│  │             │ Mongoose            │    │
-│  │  ┌──────────▼──────────────┐     │    │
-│  │  │  clouddesk-mongo        │     │    │
-│  │  │  MongoDB :27017         │     │    │
-│  │  │  volume: mongo-data     │     │    │
-│  │  └─────────────────────────┘     │    │
+│  │  └──────────┬──────┬───────┘     │    │
+│  │             │      │              │    │
+│  │  ┌──────────▼──┐  ┌▼────────┐   │    │
+│  │  │clouddesk-   │  │clouddesk│   │    │
+│  │  │mongo        │  │-redis   │   │    │
+│  │  │MongoDB:27017│  │Redis:6379│  │    │
+│  │  │vol:mongo-dat│  │         │   │    │
+│  │  └─────────────┘  └─────────┘   │    │
 │  └──────────────────────────────────┘    │
 └──────────────────────────────────────────┘
 ```
@@ -40,10 +41,10 @@ Vite's dev server with hot-module replacement is not suited to Docker in local d
 
 ## Docker Compose Files
 
-| File | Purpose | MongoDB | Env source |
-|---|---|---|---|
-| `docker-compose.yml` | Local development | Bundled mongo:7 container | Inline in compose file |
-| `docker-compose.prod.yml` | EC2 production deployment | MongoDB Atlas (external) | `server/.env` |
+| File | Purpose | MongoDB | Redis | Env source |
+|---|---|---|---|---|
+| `docker-compose.yml` | Local development | Bundled mongo:7 container | Bundled redis:7-alpine container | Inline in compose file |
+| `docker-compose.prod.yml` | EC2 production deployment | MongoDB Atlas (external) | None (in-memory rate limiting) | `server/.env` |
 
 Use `docker-compose.yml` locally. Use `docker-compose.prod.yml` on EC2. Never run `docker-compose.prod.yml` locally without a valid `server/.env` — it will fail env validation because `MONGO_URI` and `JWT_SECRET` are not bundled in that file.
 
@@ -57,6 +58,7 @@ The API uses `server/src/config/env.ts` to validate environment variables at sta
 - `NODE_ENV=development` — the default dev admin is auto-created on first run
 - `PORT=5001` — the API always listens on 5001
 - `CLIENT_URL=http://localhost:5173` — CORS allows the local Vite dev server
+- `REDIS_URL=redis://redis:6379` — rate limiting uses the Redis container automatically
 
 You do **not** need a `server/.env` file when using `docker-compose.yml` — all values are supplied by the compose file.
 
@@ -207,9 +209,33 @@ docker compose down -v
 | `docker compose ps` | Show running containers and status |
 | `docker compose logs -f api` | Stream API logs |
 | `docker compose logs -f mongo` | Stream MongoDB logs |
+| `docker compose logs -f redis` | Stream Redis logs |
 | `docker compose logs api --tail=50` | Last 50 lines of API logs |
 | `docker compose restart api` | Restart the API container |
 | `docker compose exec api npm run seed` | Seed demo users |
+| `docker compose exec redis redis-cli` | Open Redis CLI (debugging) |
+
+---
+
+## Redis (Rate Limiting)
+
+The local Docker Compose stack includes a `clouddesk-redis` service (`redis:7-alpine`, port 6379). The API connects to it automatically via `REDIS_URL=redis://redis:6379` set in `docker-compose.yml`.
+
+**What it does:** rate-limit counters are stored in Redis instead of process memory. In a single-container local stack this makes no practical difference, but it exercises the same code path that would run in a multi-instance production deployment.
+
+**Production (docker-compose.prod.yml):** `REDIS_URL` is not set. The API falls back to an in-memory rate-limit store automatically — no Redis container or external Redis is required on EC2.
+
+**View Redis logs:**
+
+```bash
+docker compose logs -f redis
+```
+
+**Connect to Redis CLI (for debugging):**
+
+```bash
+docker compose exec redis redis-cli
+```
 
 ---
 

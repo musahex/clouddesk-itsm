@@ -288,16 +288,16 @@ This section identifies the specific code and configuration points that need att
 
 **Not yet complete:**
 
-- [ ] Application Load Balancer in front of API
-- [ ] ECS/Fargate or multi-instance API deployment
-- [ ] ECR image registry — immutable versioned images
-- [ ] Shared rate limit store — Redis or equivalent for multi-instance correctness
-- [ ] CloudWatch Logs shipping — durable, centralised log storage
-- [ ] CloudWatch Alarms — CPU, 5xx rate, unhealthy host count
-- [ ] Managed secrets store — SSM Parameter Store or Secrets Manager
+- [x] Redis-ready rate limiting with in-memory fallback — `REDIS_URL` optional; falls back to per-process store when unset; distributed store active when Redis is available (Phase 7.2)
+- [x] MongoDB indexes applied — compound indexes for common Ticket and KnowledgeArticle query patterns (Phase 7.2)
+- [ ] Application Load Balancer in front of API (Stage C)
+- [ ] ECS/Fargate or multi-instance API deployment (Stage C)
+- [ ] ECR image registry — immutable versioned images (Stage B/C)
+- [ ] CloudWatch Logs shipping — durable, centralised log storage (Stage A/D)
+- [ ] CloudWatch Alarms — CPU, 5xx rate, unhealthy host count (Stage A/D)
+- [ ] Managed secrets store — SSM Parameter Store or Secrets Manager (Stage C)
 - [ ] Staging environment — pre-production validation before production deploy
 - [ ] Deploy approval gate — human review step before production
-- [ ] MongoDB index review and application
 - [ ] Load testing baseline — measured performance characteristics under load
 
 ---

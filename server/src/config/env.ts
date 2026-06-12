@@ -55,6 +55,10 @@ if (sentryEnabled && !sentryDsn) {
 const sentryEnvironment = process.env.SENTRY_ENVIRONMENT ?? nodeEnv;
 const sentryRelease = process.env.SENTRY_RELEASE ?? 'clouddesk-api@local';
 
+// Redis — optional; enables distributed rate limiting for multi-instance deployments.
+// When not set the app falls back to the in-memory rate-limit store (correct for single instance).
+const redisUrl = process.env.REDIS_URL || undefined;
+
 export const env = {
   port: portNum,
   mongoUri,
@@ -67,4 +71,5 @@ export const env = {
   sentryDsn,
   sentryEnvironment,
   sentryRelease,
+  redisUrl,
 } as const;

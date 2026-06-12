@@ -126,11 +126,12 @@ Remaining Stage 3 observability work:
 - Cost-control guidance — stages each migration step by approximate monthly cost impact
 - Employer-facing summary — frames the architectural thinking for portfolio use
 
-### Phase 7.2 — Backend Scale-Readiness Improvements (Planned)
+### Phase 7.2 — Backend Scale-Readiness Improvements ✅ Complete
 
-- Redis-backed rate limiting — replace in-memory `express-rate-limit` store with `ioredis` + `rate-limit-redis` for multi-instance correctness
-- MongoDB compound indexes — add explicit index definitions for common ticket and KB query patterns
-- Fix `bg-navy-500` in DashboardPage — `navy-500` is undefined in `tailwind.config.js`; the 'Closed' status bar renders with no background
+- **Redis-ready rate limiting** — `server/src/middleware/rateLimit.ts` replaces the inline `express-rate-limit` setup in `index.ts`. Uses `ioredis` + `rate-limit-redis` when `REDIS_URL` is set; falls back to per-process in-memory store when unset. Redis errors are caught and logged without crashing the process. `docker-compose.yml` sets `REDIS_URL=redis://redis:6379` automatically via the new `clouddesk-redis` service.
+- **MongoDB compound indexes** — `Ticket` model gains four indexes (`requester+createdAt`, `status+createdAt`, `assignedTo+status`, `priority+status`). `KnowledgeArticle` model gains two indexes (`isPublished+createdAt`, `isPublished+category`). All indexes are additive and safe to apply against a running database.
+- **Fix `bg-navy-500` in DashboardPage** — `navy-500` is not defined in `tailwind.config.js` (scale is 950/900/800/700/600/400/300). The 'Closed' status bar class corrected to `bg-navy-600`.
+- **Scale-readiness checklist updated** — `docs/scalability-plan.md` checklist now marks Redis rate limiting and MongoDB indexes as complete.
 
 ### Phase 7.3 — CloudWatch Logs Integration (Planned)
 

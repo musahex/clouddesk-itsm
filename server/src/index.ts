@@ -3,13 +3,13 @@ import { env } from './config/env';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import apiRoutes from './routes/index';
 import User from './models/User';
 import { logger, httpLogger, metricsMiddleware } from './monitoring/logger';
 import { captureException } from './monitoring/sentry';
+import { generalLimiter, authLimiter } from './middleware/rateLimit';
 
 const app = express();
 
@@ -39,24 +39,6 @@ app.use(httpLogger);
 
 // In-memory metrics and safe event buffer — resets on server restart
 app.use(metricsMiddleware);
-
-// General rate limit — 200 requests per 15 minutes per IP
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 200,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { message: 'Too many requests. Please try again later.' },
-});
-
-// Stricter limit for auth endpoints — 20 attempts per 15 minutes per IP
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { message: 'Too many authentication attempts. Please try again later.' },
-});
 
 app.use('/api', generalLimiter);
 app.use('/api/auth', authLimiter);

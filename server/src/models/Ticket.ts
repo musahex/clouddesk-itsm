@@ -85,4 +85,16 @@ const ticketSchema = new Schema<ITicket>(
   { timestamps: true }
 );
 
+// Role-scoped ticket list and dashboard aggregate queries for requesters
+ticketSchema.index({ requester: 1, createdAt: -1 });
+
+// Ticket list filtered by status, sorted by date (dashboard counts + agent list view)
+ticketSchema.index({ status: 1, createdAt: -1 });
+
+// Agent's assigned tickets filtered by status
+ticketSchema.index({ assignedTo: 1, status: 1 });
+
+// Dashboard priority/status breakdown counts (e.g. critical open tickets)
+ticketSchema.index({ priority: 1, status: 1 });
+
 export default mongoose.model<ITicket>('Ticket', ticketSchema);

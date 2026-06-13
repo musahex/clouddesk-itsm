@@ -1,0 +1,25 @@
+# CloudWatch Logs override for docker-compose.prod.yml
+#
+# Usage (after AWS IAM and log group setup — see docs/cloudwatch-logs.md):
+#
+#   AWS_REGION=us-east-1 \
+#   CLOUDWATCH_LOG_GROUP=/clouddesk/api \
+#   CLOUDWATCH_LOG_STREAM_PREFIX=api \
+#   docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml up -d --build
+#
+# Do NOT add AWS access keys here. Authentication uses the EC2 instance role.
+# The log group must be created manually before using this override —
+# awslogs-create-group is false to ensure intentional setup with retention configured.
+#
+# Rollback (return to Docker stdout logging):
+#   docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  api:
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:-us-east-1}
+        awslogs-group: ${CLOUDWATCH_LOG_GROUP:-/clouddesk/api}
+        awslogs-stream-prefix: ${CLOUDWATCH_LOG_STREAM_PREFIX:-api}
+        awslogs-create-group: "false"

@@ -21,6 +21,9 @@ docker compose -f docker-compose.prod.yml logs api --tail=50
 
 # Test directly
 curl -v http://localhost:5001/api/health
+
+# If CloudWatch Logs is active (see docs/cloudwatch-logs.md)
+aws logs filter-log-events --log-group-name /clouddesk/api --region us-east-1 --limit 20
 ```
 
 **Fix:**
@@ -311,6 +314,9 @@ docker compose -f docker-compose.prod.yml logs api --tail=50 -f
 
 # Check container state
 docker compose -f docker-compose.prod.yml ps
+
+# If CloudWatch Logs is active — logs from the crashed container may still be visible here
+aws logs filter-log-events --log-group-name /clouddesk/api --region us-east-1 --limit 30
 ```
 
 **Fix:**
@@ -377,6 +383,13 @@ curl http://localhost:5001/api/health
 docker compose -f docker-compose.prod.yml logs api --tail=100 | grep '"level":50'
 
 # Also check the Route Metrics table — high errorCount on a specific path
+
+# If CloudWatch Logs is active — filter for level 50 (error) across all log streams
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --filter-pattern '{ $.level = 50 }' \
+  --limit 20
 ```
 
 **Fix:**

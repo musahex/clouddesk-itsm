@@ -522,6 +522,7 @@ Stage 1 deliberately excludes AWS deployment, S3, CloudWatch, and ServiceNow int
 | [AWS Cost Control](docs/aws-cost-control.md) | Budget alerts, teardown checklist, cost risk notes |
 | [Production Readiness Checklist](docs/production-readiness-checklist.md) | Pre-deployment, security, smoke test, and teardown checklist |
 | [Monitoring Runbook](docs/monitoring-runbook.md) | Health checks, structured logging, Sentry setup, System Health dashboard |
+| [CloudWatch Logs](docs/cloudwatch-logs.md) | CloudWatch Logs integration guide, required AWS setup, EC2 commands, rollback |
 | [Incident Response Runbook](docs/incident-response-runbook.md) | 14-incident response guide: API failures, MongoDB, CloudFront, CORS, Sentry, disk, 5xx errors |
 | [Scalability Plan](docs/scalability-plan.md) | Current architecture, limitations, target scalable architecture, and staged migration roadmap |
 | [Load Testing Baseline](docs/load-testing-baseline.md) | Test scenarios, results tables, metrics interpretation, and future comparison points |

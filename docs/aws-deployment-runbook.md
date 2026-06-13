@@ -65,7 +65,7 @@ Before starting, confirm each item:
 - [ ] `CLIENT_URL` is set to the production frontend URL (required — server refuses to start without it in production)
 - [ ] Strong `JWT_SECRET` generated — at least 32 characters (`openssl rand -hex 32`); the server enforces this minimum length in production
 - [ ] MongoDB Atlas account created, cluster provisioned, connection string ready
-- [ ] AWS account ready, region selected (e.g. `ap-southeast-2` for Australia)
+- [ ] AWS account ready, region selected (`us-east-1` — EC2 is in `us-east-1c`)
 - [ ] AWS Budget alert created (see `docs/aws-cost-control.md`)
 - [ ] Production `.env` values prepared (not committed to repo)
 - [ ] Domain name decision made (custom domain or CloudFront/EC2 default URLs for now)
@@ -348,6 +348,47 @@ For the React client, re-upload the previous build to S3 and invalidate the Clou
 
 ```bash
 aws cloudfront create-invalidation --distribution-id <ID> --paths "/*"
+```
+
+---
+
+## Optional: Enable CloudWatch Logs
+
+CloudDesk is pre-configured to ship Docker logs to CloudWatch Logs via an optional Compose override file. This step is not required for the initial deployment — complete it after the core stack is running and verified.
+
+See `docs/cloudwatch-logs.md` for the full setup guide. Summary:
+
+**1. Create the log group with retention:**
+
+```bash
+aws logs create-log-group --log-group-name /clouddesk/api --region us-east-1
+aws logs put-retention-policy --log-group-name /clouddesk/api --retention-in-days 14 --region us-east-1
+```
+
+**2. Attach IAM permissions to the EC2 instance role:**
+
+Required actions on the log group ARN: `logs:CreateLogStream`, `logs:PutLogEvents`, `logs:DescribeLogStreams`, `logs:DescribeLogGroups`.
+
+**3. Enable the override and restart:**
+
+```bash
+AWS_REGION=us-east-1 \
+CLOUDWATCH_LOG_GROUP=/clouddesk/api \
+CLOUDWATCH_LOG_STREAM_PREFIX=api \
+docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml up -d --build
+```
+
+**4. Verify logs are arriving:**
+
+```bash
+curl http://localhost:5001/api/health/ready
+aws logs filter-log-events --log-group-name /clouddesk/api --region us-east-1 --limit 10
+```
+
+**Rollback** (return to Docker stdout logging):
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 ---

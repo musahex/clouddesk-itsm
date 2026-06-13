@@ -17,7 +17,7 @@ CloudDesk uses these monitoring layers:
 | In-memory request metrics | `monitoring/metrics.ts` | Active (Phase 6.3) |
 | Safe application events buffer | `monitoring/events.ts` | Active (Phase 6.3) |
 | Admin System Health dashboard | `/admin/system-health` | Active (Phase 6.3) |
-| CloudWatch log shipping | CloudWatch Logs agent | Planned (Stage 3) |
+| CloudWatch log shipping | Docker `awslogs` driver | Prepared — see `docker-compose.cloudwatch.yml` (Phase 7.4A) |
 
 ---
 
@@ -553,6 +553,38 @@ The `/api/system/events?limit=50` endpoint returns the 50 most recent events, ne
 - Docker daemon state
 
 Raw Docker logs are only available by SSH-ing into EC2: `docker compose -f docker-compose.prod.yml logs api --tail=100`.
+
+---
+
+## CloudWatch Logs Preparation
+
+`docker-compose.cloudwatch.yml` adds the Docker `awslogs` logging driver to the `api` service as an optional Compose override. It is **not used by the current deploy workflow** — `docker-compose.prod.yml` is unchanged.
+
+Activate only after completing the required AWS setup (log group creation, retention policy, EC2 IAM instance role permissions). See `docs/cloudwatch-logs.md` for the full setup guide.
+
+**Enable after AWS setup:**
+
+```bash
+AWS_REGION=us-east-1 \
+CLOUDWATCH_LOG_GROUP=/clouddesk/api \
+CLOUDWATCH_LOG_STREAM_PREFIX=api \
+docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml up -d --build
+```
+
+**Rollback to Docker stdout:**
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+When the `awslogs` driver is active, `docker compose logs api` will not show output in the terminal. Use the AWS CLI or CloudWatch Logs console instead:
+
+```bash
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --limit 20
+```
 
 ---
 

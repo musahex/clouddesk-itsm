@@ -143,12 +143,19 @@ Remaining Stage 3 observability work:
 - **`docs/load-testing-baseline.md`** — test environment documentation, scenario descriptions, results tables (to be filled after first run), metrics interpretation, limitations, and future comparison points
 - All scripts target `http://localhost:5001` by default — set `BASE_URL` to override; do not run aggressively against production
 
-### Phase 7.4 — CloudWatch Logs Integration (Planned)
+### Phase 7.4A — CloudWatch Logs Integration Preparation ✅ Complete
 
-- Ship Docker container logs from EC2 to CloudWatch Logs via the `awslogs` Docker log driver
-- Add EC2 IAM instance role permissions for CloudWatch Logs (`logs:CreateLogGroup`, `logs:CreateLogStream`, `logs:PutLogEvents`)
-- Add CloudWatch Alarms for EC2 CPU and disk usage
-- Update monitoring runbook with log streaming commands
+- **`docker-compose.cloudwatch.yml`** — optional Compose override file that adds the Docker `awslogs` logging driver to the `api` service; not applied to the current deploy workflow; activated manually after AWS IAM and log group setup
+- `awslogs-create-group: "false"` — log group must be created manually before use, ensuring retention is configured intentionally
+- EC2 instance role authentication — no AWS credentials in the file; uses the EC2 IAM instance profile
+- **`docs/cloudwatch-logs.md`** — full integration guide: required AWS setup (log group creation, retention, IAM policy), EC2 commands, AWS CLI verification, rollback procedure, cost control, future improvements
+- Production `docker-compose.prod.yml` is **unchanged** — this is preparation only; actual enablement is a manual operational step after IAM setup
+
+### Phase 7.4B — CloudWatch Alarms (Planned)
+
+- EC2 CPU utilisation alarm (>80% over 5 minutes)
+- 5xx error rate alarm via CloudWatch metric filter on the `/clouddesk/api` log group
+- SNS email notification on alarm state change
 
 ### Phase 7.5 — ECR + ECS/Fargate Migration (Future — cost-gated)
 

@@ -611,6 +611,80 @@ See `docs/cloudwatch-logs.md` for the full integration guide including IAM setup
 
 ---
 
+## CloudWatch Alarms
+
+Four CloudWatch alarms monitor the `CloudDesk/API` custom metrics in 5-minute windows. Alarm state changes are visible in the AWS CloudWatch console. Notifications are disabled by default — no SNS actions are configured.
+
+### Alarm summary
+
+| Alarm | Metric | Threshold | Meaning |
+|---|---|---|---|
+| `CloudDeskApi5xxAlarm` | `Api5xxCount` | Sum ≥ 1 per 5 min | Any HTTP 5xx response |
+| `CloudDeskAppErrorLogAlarm` | `AppErrorLogCount` | Sum ≥ 1 per 5 min | Any pino error-level log event |
+| `CloudDeskHighLatencyAlarm` | `ApiHighLatencyCount` | Sum ≥ 5 per 5 min | Sustained latency (5+ requests > 1000ms) |
+| `CloudDeskApi4xxSpikeAlarm` | `Api4xxCount` | Sum ≥ 20 per 5 min | 4xx spike (client errors / auth failures) |
+
+`TreatMissingData=notBreaching` — alarms stay in OK when the API is idle (no data points).
+
+### View alarm states
+
+```bash
+aws cloudwatch describe-alarms \
+  --alarm-name-prefix CloudDesk \
+  --region us-east-1 \
+  --query 'MetricAlarms[*].[AlarmName,StateValue,ActionsEnabled]' \
+  --output table
+```
+
+Or in the AWS Console: CloudWatch → Alarms → All alarms → filter by "CloudDesk".
+
+### What each metric means
+
+**`Api5xxCount`** — counts pino-http request logs where `res.statusCode >= 500`. A non-zero value in any 5-minute window means at least one backend error response was returned to a client. Investigate using CloudWatch Logs.
+
+**`AppErrorLogCount`** — counts pino log events where `level >= 50` (error or fatal). This catches backend errors beyond HTTP responses — for example, a Mongoose error logged before a response is sent, or startup failures. A non-zero value should always be investigated.
+
+**`ApiHighLatencyCount`** — counts request logs where `responseTime >= 1000`. A single slow request (e.g. Atlas reconnect) is expected; five or more in a window suggests a sustained issue. Check MongoDB Atlas connectivity and EC2 load.
+
+**`Api4xxCount`** — counts request logs where `res.statusCode` is in 400–499. 4xx errors are normal user-facing behaviour (auth failures, bad requests). The alarm fires only on a spike of 20+ per 5 minutes, which may indicate a scanning/brute-force pattern or a client misconfiguration.
+
+### Investigate an alarm using CloudWatch Logs
+
+When an alarm is in ALARM state, query the log group directly:
+
+```bash
+# View the last 20 log events
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --limit 20
+
+# Filter for error-level events only (pino level 50 = error, 60 = fatal)
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --filter-pattern '{ $.level >= 50 }' \
+  --limit 20
+
+# Filter for 5xx responses
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --filter-pattern '{ $.res.statusCode >= 500 }' \
+  --limit 20
+
+# Filter for slow requests (> 1000ms)
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --filter-pattern '{ $.responseTime >= 1000 }' \
+  --limit 20
+```
+
+See `ops/cloudwatch/README.md` for setup instructions and `docs/incident-response-runbook.md` for alarm-specific response steps.
+
+---
+
 ## Log Level Reference
 
 | Level | Number | When used |

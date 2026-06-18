@@ -254,6 +254,37 @@ These guarantees hold regardless of whether logs go to Docker stdout or CloudWat
 
 ---
 
+## CloudWatch Metric Filters and Alarms
+
+CloudWatch Logs is the foundation for metric-based alerting. The `ops/cloudwatch/` directory contains scripts to create CloudWatch metric filters and alarms on top of the log data already being shipped.
+
+**Metric filters extract counts from structured log fields:**
+
+| Filter | Metric | Log field | Description |
+|---|---|---|---|
+| `CloudDeskApi5xxCount` | `Api5xxCount` | `$.res.statusCode >= 500` | HTTP 5xx responses |
+| `CloudDeskApi4xxCount` | `Api4xxCount` | `$.res.statusCode >= 400 && < 500` | HTTP 4xx responses |
+| `CloudDeskAppErrorLogCount` | `AppErrorLogCount` | `$.level >= 50` | pino error/fatal log events |
+| `CloudDeskApiHighLatencyCount` | `ApiHighLatencyCount` | `$.responseTime >= 1000` | Requests over 1000ms |
+
+All metrics are published to the `CloudDesk/API` custom namespace with no high-cardinality dimensions.
+
+**Quick setup:**
+
+```bash
+cd ops/cloudwatch
+chmod +x *.sh
+./create-metric-filters.sh
+./create-alarms.sh
+./verify-cloudwatch-alerting.sh
+```
+
+**Important:** Metric filters only apply to log events ingested after the filter is created — historical data is not retroactively scanned. Metrics will not appear in CloudWatch until a matching log event occurs.
+
+See `ops/cloudwatch/README.md` for the full guide including IAM permissions, alarm configuration, and cleanup.
+
+---
+
 ## Future Improvements
 
 Once CloudWatch Logs is active, these additional steps become possible:

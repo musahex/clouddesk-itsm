@@ -160,13 +160,18 @@ Remaining Stage 3 observability work:
 - CloudWatch is now the source of truth for production API logs — `docker compose logs api` returns empty output when the `awslogs` driver is active
 - Future items: metric filters and CloudWatch alarms (Phase 7.4B)
 
-### Phase 7.4B — CloudWatch Alarms (Planned)
+### Phase 7.5 — CloudWatch Metric Filters and Alarm Preparation ✅ Complete
 
-- EC2 CPU utilisation alarm (>80% over 5 minutes)
-- 5xx error rate alarm via CloudWatch metric filter on the `/clouddesk/api` log group
-- SNS email notification on alarm state change
+- **`ops/cloudwatch/create-metric-filters.sh`** — creates 4 CloudWatch Logs metric filters on `/clouddesk/api`: `Api5xxCount`, `Api4xxCount`, `AppErrorLogCount`, `ApiHighLatencyCount`; idempotent; no high-cardinality dimensions
+- **`ops/cloudwatch/create-alarms.sh`** — creates 4 CloudWatch alarms on the `CloudDesk/API` custom namespace; all alarms created with `--no-actions-enabled` (no SNS notifications by default); threshold variables documented in script
+- **`ops/cloudwatch/verify-cloudwatch-alerting.sh`** — read-only script that lists metric filters, custom metrics, and alarm states
+- **`ops/cloudwatch/delete-cloudwatch-alerting.sh`** — cost-control cleanup script; deletes filters and alarms but not the log group or log data
+- **`ops/cloudwatch/README.md`** — full setup guide: IAM permissions, setup commands, test event generation, SNS wiring instructions, cost control, cleanup
+- `docs/cloudwatch-logs.md`, `docs/monitoring-runbook.md`, `docs/incident-response-runbook.md` updated with alarm documentation and alarm-triggered response steps
+- No AWS resources are created automatically from CI/CD — scripts are run manually from an authenticated terminal
+- **Future:** SNS email notification actions, Slack/PagerDuty webhook, CloudWatch dashboard widgets, alarm threshold tuning after real traffic baselines
 
-### Phase 7.5 — ECR + ECS/Fargate Migration (Future — cost-gated)
+### Phase 7.6 — ECR + ECS/Fargate Migration (Future — cost-gated)
 
 - Build Docker image in CI, push to ECR with git SHA tag
 - Create ECS cluster and Fargate task definition

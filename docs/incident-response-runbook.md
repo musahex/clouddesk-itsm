@@ -402,6 +402,135 @@ aws logs filter-log-events \
 
 ---
 
+## 15. CloudDeskApi5xxAlarm triggered
+
+**Symptoms:** The `CloudDeskApi5xxAlarm` transitions to ALARM state in CloudWatch (visible in CloudWatch → Alarms). One or more HTTP 5xx responses occurred within a 5-minute window.
+
+**Likely causes:**
+- A controller threw an unhandled exception
+- MongoDB Atlas is unavailable or returning errors
+- An upstream dependency (Redis, external service) is failing
+- A recent deployment introduced a runtime error
+
+**Checks:**
+```bash
+# 1. Confirm API is still responsive
+curl https://d2hz1ibmz7rn7t.cloudfront.net/api/health
+curl https://d2hz1ibmz7rn7t.cloudfront.net/api/health/ready
+
+# 2. View 5xx events in CloudWatch Logs
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --filter-pattern '{ $.res.statusCode >= 500 }' \
+  --limit 20
+
+# 3. View error-level log events for context
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --filter-pattern '{ $.level >= 50 }' \
+  --limit 20
+
+# 4. Check container state on EC2
+docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml ps
+docker inspect clouddesk-api --format '{{.State.Status}} {{.State.Error}}'
+
+# 5. Check Sentry for stack traces (if enabled)
+# → sentry.io → clouddesk-api project → Issues
+```
+
+**Fix:**
+1. Identify the failing route from the CloudWatch log events (`req.url`, `req.method`, `res.statusCode`)
+2. Check the error message and stack trace in pino error logs or Sentry
+3. If the error started after a recent push, roll back: `git reset --hard <prev-sha>` on EC2 then `docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml up -d --build`
+4. If Atlas is causing the 5xx, follow Incident #2
+
+**Prevention:** Review CloudWatch alarm state after every deployment. Check `/api/health/ready` as part of the post-deploy smoke test.
+
+---
+
+## 16. CloudDeskAppErrorLogAlarm triggered
+
+**Symptoms:** The `CloudDeskAppErrorLogAlarm` transitions to ALARM state. One or more pino log events with `level >= 50` (error or fatal) occurred within 5 minutes. This alarm can fire independently of 5xx HTTP responses — a backend error may be logged before or without a corresponding error response code.
+
+**Likely causes:**
+- MongoDB connection error (Mongoose throws, logs error, API may still return 500)
+- Unhandled promise rejection caught by Express error middleware
+- Fatal startup event (JWT_SECRET missing, port bind failure)
+- A controller caught and logged an error without re-throwing it
+
+**Checks:**
+```bash
+# 1. Check API health and readiness
+curl https://d2hz1ibmz7rn7t.cloudfront.net/api/health
+curl https://d2hz1ibmz7rn7t.cloudfront.net/api/health/ready
+
+# 2. Retrieve error-level log events from CloudWatch
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --filter-pattern '{ $.level >= 50 }' \
+  --limit 20
+
+# 3. Check container state
+docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml ps
+docker inspect clouddesk-api --format '{{.State.Status}} {{.State.Error}}'
+
+# 4. Check Sentry (if enabled) — error-level pino logs are forwarded to Sentry
+# → sentry.io → clouddesk-api project → Issues
+```
+
+**Fix:**
+1. Read the error log line — pino error logs include `err.message` and `err.stack` fields
+2. If MongoDB related: follow Incident #2 and #3
+3. If the container is in a restart loop: follow Incident #12
+4. If a controller is swallowing errors: identify the route from the log context and fix or roll back
+
+**Prevention:** Never use `catch(() => {})` without logging or re-throwing. Review the System Health dashboard → Recent Application Events after every deployment.
+
+---
+
+## 17. CloudDeskHighLatencyAlarm triggered
+
+**Symptoms:** The `CloudDeskHighLatencyAlarm` transitions to ALARM state. Five or more API requests took ≥ 1000ms within a 5-minute window.
+
+**Likely causes:**
+- MongoDB Atlas is slow or reconnecting (cold connection after Atlas auto-pause)
+- EC2 instance is under CPU or memory pressure
+- A slow database query (missing index, large scan)
+- Atlas free tier M0 throttling or connection limit reached
+
+**Checks:**
+```bash
+# 1. Check API readiness — 503 confirms DB issue
+curl https://d2hz1ibmz7rn7t.cloudfront.net/api/health/ready
+
+# 2. View slow request log events in CloudWatch
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --filter-pattern '{ $.responseTime >= 1000 }' \
+  --limit 20
+
+# 3. Check EC2 CPU and memory
+# → EC2 console → Monitoring tab → CPU Utilization
+# Or on EC2:
+top -b -n1 | head -20
+
+# 4. Check container memory usage on EC2
+docker stats clouddesk-api --no-stream
+```
+
+**Fix:**
+1. If Atlas is slow to reconnect: check Atlas console → Metrics for connection count and latency. Resume a paused cluster if needed (see Incident #2)
+2. If a specific route is consistently slow: check the route metrics on the System Health page for high `avgResponseTimeMs` on a path, then review that controller's DB queries for missing indexes
+3. If EC2 is overloaded: consider upgrading from `t3.micro` to `t3.small`, or trigger a container restart to free leaked memory
+
+**Prevention:** Monitor the System Health dashboard for average and slowest response times after each deployment. Use M10+ Atlas cluster to avoid auto-pause latency.
+
+---
+
 ## Log Level Reference
 
 | Level | Number | Meaning |

@@ -367,8 +367,23 @@ The admin-only `/admin/system-health` page provides a live view of the running a
 
 In-memory metrics reset on server restart. No secrets are exposed.
 
+### CloudWatch alarms (AWS)
+
+Four CloudWatch metric filters extract signal from pino structured logs and publish to the `CloudDesk/API` custom namespace:
+
+| Metric | Condition | Alarm threshold |
+|---|---|---|
+| `Api5xxCount` | `res.statusCode >= 500` | ≥ 1 per 5 min |
+| `AppErrorLogCount` | `level >= 50` (pino error/fatal) | ≥ 1 per 5 min |
+| `ApiHighLatencyCount` | `responseTime >= 1000ms` | ≥ 5 per 5 min |
+| `Api4xxCount` | `res.statusCode` 400–499 | ≥ 20 per 5 min |
+
+Alarms are visible in the CloudWatch console. Notifications are disabled by default (no SNS). Setup: `cd ops/cloudwatch && chmod +x *.sh && ./create-metric-filters.sh && ./create-alarms.sh`
+
+See [ops/cloudwatch/README.md](ops/cloudwatch/README.md) for the full setup guide.
+
 See [docs/monitoring-runbook.md](docs/monitoring-runbook.md) for full setup, log commands, and incident response guidance.
-See [docs/incident-response-runbook.md](docs/incident-response-runbook.md) for the 14-incident response guide.
+See [docs/incident-response-runbook.md](docs/incident-response-runbook.md) for the 17-incident response guide.
 
 ### Admin Account Strategy
 

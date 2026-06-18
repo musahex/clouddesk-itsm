@@ -55,6 +55,26 @@ jobs:
           cd '${EC2_APP_DIR}'
           git fetch origin main
           git reset --hard origin/main
+          echo "Pre-flight: checking required files..."
+          if [ ! -f docker-compose.cloudwatch.yml ]; then
+            echo "ERROR: docker-compose.cloudwatch.yml not found in \$(pwd)"
+            exit 1
+          fi
+          if [ ! -f docker-compose.prod.yml ]; then
+            echo "ERROR: docker-compose.prod.yml not found in \$(pwd)"
+            exit 1
+          fi
+          echo "Pre-flight: verifying CloudWatch log group and IAM permissions..."
+          CW_CHECK=\$(aws logs describe-log-groups \
+            --log-group-name-prefix /clouddesk/api \
+            --region us-east-1 \
+            --query 'logGroups[0].logGroupName' \
+            --output text 2>/dev/null || echo "FAILED")
+          if [ "\$CW_CHECK" = "FAILED" ] || [ "\$CW_CHECK" = "None" ] || [ -z "\$CW_CHECK" ]; then
+            echo "ERROR: CloudWatch log group or IAM permissions are not ready."
+            exit 1
+          fi
+          echo "Pre-flight: CloudWatch log group confirmed: \$CW_CHECK"
           export SENTRY_DSN_NEW='${SENTRY_API_DSN}'
           export SENTRY_RELEASE_NEW='clouddesk-api@${DEPLOY_SHA}'
           python3 - << 'PYEOF'
@@ -87,6 +107,8 @@ jobs:
               f.writelines(new_lines)
           print('Updated backend Sentry environment keys')
           PYEOF
+          AWS_REGION=us-east-1 \
+          CLOUDWATCH_LOG_GROUP=/clouddesk/api \
           docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml up -d --build
           docker image prune -f
           echo "Waiting for CloudDesk API health check..."
@@ -99,7 +121,11 @@ jobs:
             sleep 3
             if [ "\$i" -eq 30 ]; then
               echo "API failed health check after 30 attempts"
-              docker compose -f docker-compose.prod.yml logs api --tail=100
+              docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml ps
+              docker ps -a
+              docker inspect clouddesk-api --format '{{.State.Status}} {{.State.Error}}'
+              echo "Container logs are in CloudWatch. To query:"
+              echo "  aws logs filter-log-events --log-group-name /clouddesk/api --region us-east-1 --limit 20"
               exit 1
             fi
           done
@@ -113,7 +139,11 @@ jobs:
             sleep 3
             if [ "\$i" -eq 20 ]; then
               echo "API failed readiness check after 20 attempts"
-              docker compose -f docker-compose.prod.yml logs api --tail=100
+              docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml ps
+              docker ps -a
+              docker inspect clouddesk-api --format '{{.State.Status}} {{.State.Error}}'
+              echo "Container logs are in CloudWatch. To query:"
+              echo "  aws logs filter-log-events --log-group-name /clouddesk/api --region us-east-1 --limit 20"
               exit 1
             fi
           done

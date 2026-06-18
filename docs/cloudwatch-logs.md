@@ -12,7 +12,7 @@ AWS CloudWatch Logs provides centralised, persistent, searchable log storage. Sh
 - Foundation for CloudWatch metric filters and alarms (e.g. 5xx error rate)
 - Incident investigation without SSH access to EC2
 
-This document prepares the integration safely. `docker-compose.prod.yml` is **not modified** — CloudWatch shipping is activated via an optional Compose override file (`docker-compose.cloudwatch.yml`) after the required AWS setup is complete.
+CloudWatch logging is now **active in production**. The deploy workflow (`deploy.yml`) uses `docker-compose.cloudwatch.yml` by default on every push to `main`. `docker-compose.prod.yml` is unchanged — CloudWatch shipping is applied via the Compose override file.
 
 ---
 
@@ -68,18 +68,19 @@ services:
       options:
         awslogs-region: ${AWS_REGION:-us-east-1}
         awslogs-group: ${CLOUDWATCH_LOG_GROUP:-/clouddesk/api}
-        awslogs-stream-prefix: ${CLOUDWATCH_LOG_STREAM_PREFIX:-api}
+        tag: "api-{{.ID}}"
         awslogs-create-group: "false"
 ```
 
 **Key design decisions:**
 
 - `awslogs-create-group: "false"` — the log group must be created manually with a retention policy before this file is used. Allowing Docker to auto-create log groups produces groups with no retention, which accumulates cost indefinitely.
+- `tag: "api-{{.ID}}"` — log stream name includes the short container ID, which is compatible with the Docker `awslogs` driver. `awslogs-stream-prefix` is not used as it is not a valid Docker Compose `awslogs` option.
 - No AWS credentials in the file — authentication uses the EC2 instance IAM role (instance profile). No `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` should ever appear in this file.
 - Region defaults to `us-east-1` (where the EC2 instance is deployed — `us-east-1c`) but is overridable via `AWS_REGION`.
 - The override applies only to the `api` service. `mongo` and `redis` keep their default logging behaviour (Docker stdout, used only in the local `docker-compose.yml` stack).
 
-**This file is NOT used by the current deploy workflow.** `docker-compose.prod.yml` is unchanged. The override must be added explicitly to the `docker compose` command after AWS setup is complete.
+**This file is used by `deploy.yml` on every push to `main`.** CI/CD backend deployments include the CloudWatch override by default. `docker-compose.prod.yml` is unchanged — the override is applied on top via `-f docker-compose.cloudwatch.yml`.
 
 ---
 
@@ -161,7 +162,6 @@ docker compose -f docker-compose.prod.yml logs api --tail=80
 ```bash
 AWS_REGION=us-east-1 \
 CLOUDWATCH_LOG_GROUP=/clouddesk/api \
-CLOUDWATCH_LOG_STREAM_PREFIX=api \
 docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml up -d --build
 ```
 
@@ -209,13 +209,15 @@ A successful deployment will show JSON log lines from pino within 1–2 minutes 
 
 ## Rollback
 
-To stop CloudWatch shipping and return to Docker stdout logging:
+To disable CloudWatch logging temporarily (manual rollback on EC2):
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 This starts the stack without the CloudWatch override. The `api` container uses the default Docker `json-file` logging driver and logs are available again via `docker compose logs api`. No application code change is required.
+
+**Important:** The next GitHub Actions deployment to `main` will re-enable CloudWatch logging automatically, because `deploy.yml` includes the `-f docker-compose.cloudwatch.yml` override by default. To permanently disable CloudWatch logging through CI/CD, remove the `-f docker-compose.cloudwatch.yml` flag from the deploy command in `.github/workflows/deploy.yml`.
 
 Log data already in CloudWatch is not deleted by the rollback — it remains in the log group until the retention period expires or it is explicitly deleted.
 

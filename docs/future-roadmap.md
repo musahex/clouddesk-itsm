@@ -145,11 +145,20 @@ Remaining Stage 3 observability work:
 
 ### Phase 7.4A — CloudWatch Logs Integration Preparation ✅ Complete
 
-- **`docker-compose.cloudwatch.yml`** — optional Compose override file that adds the Docker `awslogs` logging driver to the `api` service; not applied to the current deploy workflow; activated manually after AWS IAM and log group setup
+- **`docker-compose.cloudwatch.yml`** — Compose override file that adds the Docker `awslogs` logging driver to the `api` service; uses EC2 IAM instance profile authentication; no AWS credentials in the file
 - `awslogs-create-group: "false"` — log group must be created manually before use, ensuring retention is configured intentionally
-- EC2 instance role authentication — no AWS credentials in the file; uses the EC2 IAM instance profile
 - **`docs/cloudwatch-logs.md`** — full integration guide: required AWS setup (log group creation, retention, IAM policy), EC2 commands, AWS CLI verification, rollback procedure, cost control, future improvements
-- Production `docker-compose.prod.yml` is **unchanged** — this is preparation only; actual enablement is a manual operational step after IAM setup
+
+### Phase 7.4C — CloudWatch Logs CI/CD Persistence ✅ Complete
+
+- CloudWatch log group `/clouddesk/api` created in `us-east-1` with 7-day retention
+- EC2 IAM instance role configured with `logs:CreateLogStream`, `logs:PutLogEvents`, `logs:DescribeLogStreams`, `logs:DescribeLogGroups`
+- CloudWatch logging manually verified on EC2 — logs visible in CloudWatch console
+- **`.github/workflows/deploy.yml`** updated — backend deploys now use `-f docker-compose.cloudwatch.yml` by default with `AWS_REGION=us-east-1` and `CLOUDWATCH_LOG_GROUP=/clouddesk/api`
+- Pre-flight checks added to deploy workflow: file existence checks and CloudWatch IAM permission verification via `aws logs describe-log-groups`
+- Failure diagnostics updated to include CloudWatch CLI hint instead of relying only on `docker compose logs`
+- CloudWatch is now the source of truth for production API logs — `docker compose logs api` returns empty output when the `awslogs` driver is active
+- Future items: metric filters and CloudWatch alarms (Phase 7.4B)
 
 ### Phase 7.4B — CloudWatch Alarms (Planned)
 

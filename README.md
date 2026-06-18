@@ -196,6 +196,7 @@ Then open `http://localhost:5173` and log in with any demo credential.
 |---|---|---|
 | `docker-compose.yml` | Local development | Bundled mongo:7 container |
 | `docker-compose.prod.yml` | EC2 production | MongoDB Atlas via `server/.env` |
+| `docker-compose.cloudwatch.yml` | CloudWatch logging override (used by CI/CD) | N/A — applied on top of prod |
 
 ---
 
@@ -331,10 +332,14 @@ The `/api/health` endpoint is used as the deploy gate in the GitHub Actions depl
 
 ### Structured logging
 
-The API uses `pino` and `pino-http` for structured JSON request logging. On EC2, logs are available via Docker Compose:
+The API uses `pino` and `pino-http` for structured JSON request logging. In production, logs are shipped to AWS CloudWatch Logs via the Docker `awslogs` driver — `docker compose logs api` will not show output when CloudWatch logging is active.
 
 ```bash
-docker compose -f docker-compose.prod.yml logs -f api
+# View recent production logs via AWS CLI
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --limit 20
 ```
 
 `Authorization` headers and `password` fields are redacted from all log output.
@@ -425,7 +430,7 @@ Two GitHub Actions workflows run on this repo:
 
 On every merge to `main`:
 1. Server and client builds are validated — deploy is blocked if either fails
-2. Backend: SSH to EC2, `git reset --hard`, upsert Sentry env vars into `server/.env`, rebuild Docker image, health + readiness check
+2. Backend: SSH to EC2, `git reset --hard`, verify CloudWatch log group, upsert Sentry env vars into `server/.env`, rebuild Docker image with CloudWatch logging override, health + readiness check
 3. Frontend: inject `VITE_SENTRY_*` build-time vars, build React client, `aws s3 sync`, CloudFront invalidation
 
 Eleven GitHub secrets are required — see [docs/cicd-deployment.md](docs/cicd-deployment.md) for the full list, IAM permissions, and troubleshooting guide.

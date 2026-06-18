@@ -17,7 +17,7 @@ CloudDesk uses these monitoring layers:
 | In-memory request metrics | `monitoring/metrics.ts` | Active (Phase 6.3) |
 | Safe application events buffer | `monitoring/events.ts` | Active (Phase 6.3) |
 | Admin System Health dashboard | `/admin/system-health` | Active (Phase 6.3) |
-| CloudWatch log shipping | Docker `awslogs` driver | Prepared — see `docker-compose.cloudwatch.yml` (Phase 7.4A) |
+| CloudWatch log shipping | Docker `awslogs` driver | Active — CI/CD uses `docker-compose.cloudwatch.yml` by default (Phase 7.4C) |
 
 ---
 
@@ -275,15 +275,17 @@ The API emits JSON log lines via `pino`. On EC2, these appear in Docker Compose 
 
 ### View logs on EC2
 
-```bash
-# Last 100 lines
-docker compose -f docker-compose.prod.yml logs api --tail=100
+With CloudWatch logging active, `docker compose logs api` will not show output — logs are shipped to CloudWatch. Use the AWS CLI instead:
 
-# Stream live
-docker compose -f docker-compose.prod.yml logs -f api
+```bash
+# View recent log events
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --limit 20
 
 # Container status
-docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml ps
 ```
 
 ### Log format
@@ -340,8 +342,12 @@ Example log line (formatted for readability):
 **Checks:**
 
 ```bash
-# View recent errors on EC2
-docker compose -f docker-compose.prod.yml logs api --tail=100 | grep '"level":50'
+# View recent errors in CloudWatch
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --filter-pattern '"level":50' \
+  --limit 20
 
 # Check if Sentry received the error
 # Log into sentry.io → your project → Issues
@@ -365,8 +371,11 @@ docker compose -f docker-compose.prod.yml logs api --tail=100 | grep '"level":50
 **Checks:**
 
 ```bash
-# On EC2 — check API logs for connection errors
-docker compose -f docker-compose.prod.yml logs api --tail=50
+# Check API logs in CloudWatch for connection errors
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --limit 20
 
 # Check Atlas cluster status in Atlas console
 # Atlas → Clusters → your cluster → check status indicator
@@ -419,8 +428,13 @@ curl https://checkip.amazonaws.com
 curl http://<EC2-PUBLIC-IP>:5001/api/health
 
 # On EC2
-docker compose -f docker-compose.prod.yml ps
-docker compose -f docker-compose.prod.yml logs api --tail=30
+docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml ps
+
+# Container logs are in CloudWatch
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --limit 20
 ```
 
 **Fix:**
@@ -556,35 +570,44 @@ Raw Docker logs are only available by SSH-ing into EC2: `docker compose -f docke
 
 ---
 
-## CloudWatch Logs Preparation
+## CloudWatch Logs
 
-`docker-compose.cloudwatch.yml` adds the Docker `awslogs` logging driver to the `api` service as an optional Compose override. It is **not used by the current deploy workflow** — `docker-compose.prod.yml` is unchanged.
+CloudWatch Logs is **active in production** — the deploy workflow (`deploy.yml`) includes `docker-compose.cloudwatch.yml` on every push to `main`. Log group: `/clouddesk/api`, region: `us-east-1`, retention: 7 days.
 
-Activate only after completing the required AWS setup (log group creation, retention policy, EC2 IAM instance role permissions). See `docs/cloudwatch-logs.md` for the full setup guide.
+`docker compose logs api` will return empty output in production — Docker hands log delivery to CloudWatch. Use the AWS CLI or CloudWatch Logs console to query logs.
 
-**Enable after AWS setup:**
+**List recent log streams:**
 
 ```bash
-AWS_REGION=us-east-1 \
-CLOUDWATCH_LOG_GROUP=/clouddesk/api \
-CLOUDWATCH_LOG_STREAM_PREFIX=api \
-docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml up -d --build
+aws logs describe-log-streams \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --order-by LastEventTime \
+  --descending \
+  --max-items 5
 ```
 
-**Rollback to Docker stdout:**
+**View recent log events (last 10 minutes):**
+
+```bash
+START_TIME=$(( ($(date +%s) - 600) * 1000 ))
+
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --start-time "$START_TIME" \
+  --limit 20
+```
+
+**Rollback to Docker stdout logging (manual EC2 override):**
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-When the `awslogs` driver is active, `docker compose logs api` will not show output in the terminal. Use the AWS CLI or CloudWatch Logs console instead:
+Note: the next GitHub Actions deployment will re-enable CloudWatch logging unless `.github/workflows/deploy.yml` is updated.
 
-```bash
-aws logs filter-log-events \
-  --log-group-name /clouddesk/api \
-  --region us-east-1 \
-  --limit 20
-```
+See `docs/cloudwatch-logs.md` for the full integration guide including IAM setup and log group creation.
 
 ---
 

@@ -1,10 +1,12 @@
 # CloudWatch Logs override for docker-compose.prod.yml
 #
-# Usage (after AWS IAM and log group setup — see docs/cloudwatch-logs.md):
+# This override is used by default in CI/CD (deploy.yml) for all production
+# backend deployments. See docs/cloudwatch-logs.md for the full setup guide.
+#
+# Manual usage (AWS IAM and log group must be configured first):
 #
 #   AWS_REGION=us-east-1 \
 #   CLOUDWATCH_LOG_GROUP=/clouddesk/api \
-#   CLOUDWATCH_LOG_STREAM_PREFIX=api \
 #   docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml up -d --build
 #
 # Do NOT add AWS access keys here. Authentication uses the EC2 instance role.
@@ -13,6 +15,8 @@
 #
 # Rollback (return to Docker stdout logging):
 #   docker compose -f docker-compose.prod.yml up -d --build
+# Note: the next GitHub Actions deployment will re-enable CloudWatch logging
+# unless the workflow is updated to remove -f docker-compose.cloudwatch.yml.
 
 services:
   api:

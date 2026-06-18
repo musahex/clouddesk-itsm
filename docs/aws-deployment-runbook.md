@@ -284,10 +284,22 @@ After deployment, run through each item logged in as the appropriate user:
 
 ### View live logs
 
+With CloudWatch logging active, `docker compose logs api` will not show output — Docker has handed log delivery to CloudWatch. CloudWatch Logs is the source of truth for production API logs.
+
 ```bash
-# On EC2
-docker compose -f docker-compose.prod.yml logs -f api
-docker compose -f docker-compose.prod.yml logs api --tail=100
+# View recent log events via AWS CLI
+aws logs filter-log-events \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --limit 20
+
+# List recent log streams
+aws logs describe-log-streams \
+  --log-group-name /clouddesk/api \
+  --region us-east-1 \
+  --order-by LastEventTime \
+  --descending \
+  --max-items 5
 ```
 
 Logs are structured JSON. Each line includes the HTTP method, URL, status code, and response time. `Authorization` headers and passwords are redacted automatically.
@@ -352,11 +364,11 @@ aws cloudfront create-invalidation --distribution-id <ID> --paths "/*"
 
 ---
 
-## Optional: Enable CloudWatch Logs
+## CloudWatch Logs — Active in Production
 
-CloudDesk is pre-configured to ship Docker logs to CloudWatch Logs via an optional Compose override file. This step is not required for the initial deployment — complete it after the core stack is running and verified.
+CloudWatch Logs is enabled by default in the production deploy workflow. Every push to `main` via GitHub Actions deploys the backend using the CloudWatch Compose override (`-f docker-compose.cloudwatch.yml`). CloudWatch Logs is the source of truth for production API logs — `docker compose logs api` will not show output when the `awslogs` driver is active.
 
-See `docs/cloudwatch-logs.md` for the full setup guide. Summary:
+This section documents the integration for reference and for manual EC2 use. See `docs/cloudwatch-logs.md` for the full guide. Summary:
 
 **1. Create the log group with retention:**
 
@@ -374,7 +386,6 @@ Required actions on the log group ARN: `logs:CreateLogStream`, `logs:PutLogEvent
 ```bash
 AWS_REGION=us-east-1 \
 CLOUDWATCH_LOG_GROUP=/clouddesk/api \
-CLOUDWATCH_LOG_STREAM_PREFIX=api \
 docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml up -d --build
 ```
 

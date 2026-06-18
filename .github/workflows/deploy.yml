@@ -87,7 +87,7 @@ jobs:
               f.writelines(new_lines)
           print('Updated backend Sentry environment keys')
           PYEOF
-          docker compose -f docker-compose.prod.yml up -d --build
+          docker compose -f docker-compose.prod.yml -f docker-compose.cloudwatch.yml up -d --build
           docker image prune -f
           echo "Waiting for CloudDesk API health check..."
           for i in \$(seq 1 30); do
